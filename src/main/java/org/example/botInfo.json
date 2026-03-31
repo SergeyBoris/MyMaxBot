@@ -1,0 +1,257 @@
+Простое сообщение
+{
+  "updates": [
+    {
+      "message": {
+        "recipient": {
+          "chat_id": 105564173,
+          "chat_type": "dialog",
+          "user_id": 111674804
+        },
+        "timestamp": 1765449707277,
+        "body": {
+          "mid": "mid.00000000064ac80d019b0d00af0d5642",
+          "seq": 115700512016127554,
+          "text": "1"
+        },
+        "sender": {
+          "user_id": 14863801,
+          "first_name": "Сергей",
+          "last_name": "Борисов",
+          "is_bot": false,
+          "last_activity_time": 1765449701000,
+          "name": "Сергей Борисов"
+        }
+      },
+      "timestamp": 1765449707277,
+      "user_locale": "ru",
+      "update_type": "message_created"
+    }
+  ],
+  "marker": 5165136
+}
+конец простого сообщения
+
+
+ответ на сообщение
+{
+  "updates": [
+    {
+      "message": {
+        "recipient": {
+          "chat_id": 105564173,
+          "chat_type": "dialog",
+          "user_id": 111674804
+        },
+        "timestamp": 1765449769067,
+        "body": {
+          "mid": "mid.00000000064ac80d019b0d01a06b554d",
+          "seq": 115700516065596749,
+          "text": "123"
+        },
+        "sender": {
+          "user_id": 14863801,
+          "first_name": "Сергей",
+          "last_name": "Борисов",
+          "is_bot": false,
+          "last_activity_time": 1765449762000,
+          "name": "Сергей Борисов"
+        },
+        "link": {
+          "type": "reply",
+          "message": {
+            "mid": "mid.00000000064ac80d019b07f17f3239c4",
+            "seq": 115694949230590404,
+            "text": "Меню",
+            "attachments": [
+              {
+                "callback_id": "f9LHodD0cOIPuc7m_5O-zKeL4gyZyvInviQgC07fdzJlmjRLOj6FMZ5ijPKIalC1znIuLM2X_EfmRzpRQo3_YeFk3s2A8yFsmPpTSWdl90LEvmlqVWOv",
+                "payload": {
+                  "buttons": [
+                    [
+                      {
+                        "payload": "all_requests",
+                        "text": "Список заявок",
+                        "intent": "default",
+                        "type": "callback"
+                      }
+                    ]
+                  ]
+                },
+                "type": "inline_keyboard"
+              }
+            ]
+          },
+          "sender": {
+            "user_id": 111674804,
+            "first_name": "UnionService",
+            "username": "id422369696201_bot",
+            "is_bot": true,
+            "last_activity_time": 1765449769101,
+            "name": "UnionService"
+          },
+          "chat_id": 105564173
+        }
+      },
+      "timestamp": 1765449769067,
+      "user_locale": "ru",
+      "update_type": "message_created"
+    }
+  ],
+  "marker": 5165364
+}
+конец ответ на сообщение
+
+
+ответ на сообщение с вложениями
+{
+  "updates": [
+    {
+      "message": {
+        "recipient": {
+          "chat_id": 105564173,
+          "chat_type": "dialog",
+          "user_id": 111674804
+        },
+        "timestamp": 1765451238141,
+        "body": {
+          "mid": "mid.00000000064ac80d019b0d180afd18a9",
+          "seq": 115700612342814889,
+          "text": "123",
+          "attachments": [
+            {
+              "payload": {
+                "photo_id": 1339932089,
+                "token": "gkDMfjYxR52bgRmNi9/c4TxKrtAdNwf4UXYsl7DKV6TluKCPCC12BiTBMB4o4FuQb1HuPQ+PxgEFEV6UJg5SXpi5rmSo1feSQ96KgeaQeo5hVCwVanB8LQ==",
+                "url": "https://i.oneme.ru/i?r=BTGBPUwtwgYUeoFhO7rESmr8h4K319aEgY2TYFaTSgNDSMEPSJDJstgeNzHzAFSHPlI"
+              },
+              "type": "image"
+            },
+            {
+              "payload": {
+                "photo_id": 1339935929,
+                "token": "7bWQAuhRBWMxgnyi7LSc4ozAa5u2E84QPQ3xt6l4y+q2iDXfRQYVcUzHuvm9LBJwueKh38QlTVyhYqQ5UDKF+t9kN9iyMzEsXNZYHVZRUD4=",
+                "url": "https://i.oneme.ru/i?r=BTGBPUwtwgYUeoFhO7rESmr8Mrwz68OpQqN8MJkSBI409sEPSJDJstgeNzHzAFSHPlI"
+              },
+              "type": "image"
+            }
+          ]
+        },
+        "sender": {
+          "user_id": 14863801,
+          "first_name": "Сергей",
+          "last_name": "Борисов",
+          "is_bot": false,
+          "last_activity_time": 1765451235000,
+          "name": "Сергей Борисов"
+        },
+        "link": {
+          "type": "reply",
+          "message": {
+            "mid": "mid.00000000064ac80d019b07f17f3239c4",
+            "seq": 115694949230590404,
+            "text": "Меню",
+            "attachments": [
+              {
+                "callback_id": "f9LHodD0cOI-5CPN_i9Uu6-rPtSxjtyMEfMEwjefGPDp6tBMkmWVsreYhS-qvn2LOSQAEagBHW78cwotwcaNUHs583hWpDn-yabG43sVIg7hA4sgwvLt",
+                "payload": {
+                  "buttons": [
+                    [
+                      {
+                        "payload": "all_requests",
+                        "text": "Список заявок",
+                        "intent": "default",
+                        "type": "callback"
+                      }
+                    ]
+                  ]
+                },
+                "type": "inline_keyboard"
+              }
+            ]
+          },
+          "sender": {
+            "user_id": 111674804,
+            "first_name": "UnionService",
+            "username": "id422369696201_bot",
+            "is_bot": true,
+            "last_activity_time": 1765451238177,
+            "name": "UnionService"
+          },
+          "chat_id": 105564173
+        }
+      },
+      "timestamp": 1765451238141,
+      "user_locale": "ru",
+      "update_type": "message_created"
+    }
+  ],
+  "marker": 5171589
+}
+конец ответ на сообщение с вложениями
+
+сообщение с колбэк
+{
+  "updates": [
+    {
+      "callback": {
+        "timestamp": 1765884415038,
+        "callback_id": "f9LHodD0cOL6Af93rUGhB-uZBoEBWWMBHk63qpiKTrJpbg1lFA87xuWvjvP1pDgnofdAo05orwBpuzIVV1BjVH6v8IDdZnGtdpXssCZRyKdz9ezvH_8P",
+        "user": {
+          "user_id": 14863801,
+          "first_name": "Сергей",
+          "last_name": "Борисов",
+          "is_bot": false,
+          "last_activity_time": 1765884397000,
+          "name": "Сергей Борисов"
+        },
+        "payload": "end_photo"
+      },
+      "message": {
+        "recipient": {
+          "chat_id": 105564173,
+          "chat_type": "dialog",
+          "user_id": 14863801
+        },
+        "timestamp": 1765884409942,
+        "body": {
+          "mid": "mid.00000000064ac80d019b26e9b8566980",
+          "seq": 115729000689985920,
+          "text": "приложите фото и нажмите \"готово\"",
+          "attachments": [
+            {
+              "callback_id": "f9LHodD0cOIQHdQLcNGI75RTxKO2Ai6x0YhCN6Uvhp0IK3oTYrcyhAc8SIJf0xYmXdlhIoUFlim7ItNkWe0cENrr2rULk2u9HRD_6LLMEG44UUvlxoQX",
+              "payload": {
+                "buttons": [
+                  [
+                    {
+                      "payload": "end_photo",
+                      "text": "готово",
+                      "intent": "default",
+                      "type": "callback"
+                    }
+                  ]
+                ]
+              },
+              "type": "inline_keyboard"
+            }
+          ]
+        },
+        "sender": {
+          "user_id": 111674804,
+          "first_name": "UnionService",
+          "username": "id422369696201_bot",
+          "is_bot": true,
+          "last_activity_time": 1765884418626,
+          "name": "UnionService"
+        }
+      },
+      "timestamp": 1765884415038,
+      "user_locale": "ru",
+      "update_type": "message_callback"
+    }
+  ],
+  "marker": 5939630
+}
+
+клнец сообщения с коллбэк
