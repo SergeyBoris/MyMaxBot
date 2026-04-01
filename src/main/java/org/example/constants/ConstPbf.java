@@ -13,7 +13,7 @@ public class ConstPbf {
     static {
 
         try {
-            PbfConfig config =  ConfigLoader.load("config.json", PbfConfig.class);
+            PbfConfig config =  ConfigLoader.load("pbfConfig.json", PbfConfig.class);
 
             URL = config.url;
             AUTHORISATION = config.authorisation;

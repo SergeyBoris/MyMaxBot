@@ -110,11 +110,11 @@ public class EmailMonitorService {
     }
 
     private String htmlToText(String html) {
-        return html;
-//                .replaceAll("&nbsp;", " ")
-//                .replaceAll("<[^>]*>", "")  // Удаляем все теги
-//                .replaceAll("\\s+", " ")     // Заменяем множественные пробелы на один
-//                .trim();
+        return html
+                .replaceAll("&nbsp;", " ")
+                .replaceAll("<[^>]*>", "")  // Удаляем все теги
+                .replaceAll("\\s+", " ")     // Заменяем множественные пробелы на один
+                .trim();
     }
 
     private String normalizeToJson(String badText) {
