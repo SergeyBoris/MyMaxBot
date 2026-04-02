@@ -49,7 +49,7 @@ public class Hendz implements Contragent {
     @Override
     public void addReqToCash(Req req) {
         for (Long user : db.getAllUsers()) {
-            messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
+            messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ALL_REQ);
         }
         cashedRequests.put(req.getRequestNumber(), req);
     }
@@ -73,9 +73,11 @@ public class Hendz implements Contragent {
                 }
             } else if (messageText.contains("назначена на инженера")) {
                 addReqToCash(parseToReq(message));
-            } else if (messageText.contains("Задача выполнена")) {
+            } else if (messageText.contains("Задача выполнена") || messageText.contains("Задача ОТМЕНЕНА")) {
                 Req req = parseToReq(message);
-
+                for (Long user : db.getAllUsers()) {
+                    messageService.sendSimpleMessage(db.getUserChatId(user), messageText, Const.KEYBOARD_ALL_REQ);
+                }
                     cashedRequests.remove(req.getRequestNumber());
 
             }
@@ -107,8 +109,8 @@ public class Hendz implements Contragent {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        int addressBeginIndex = messageBody.indexOf("Место установки");
-        int addressEndIndex = messageBody.indexOf("Время открытия инцидента");
+        int addressBeginIndex = messageBody.indexOf("Регион установки");
+        int addressEndIndex = messageBody.indexOf("Место установки");
         if (addressEndIndex != -1 && addressBeginIndex != -1) {
             req.setRequestAddress(messageBody.substring(addressBeginIndex, addressEndIndex));
         }

@@ -2,9 +2,17 @@ package org.example.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.*;
+import jakarta.mail.internet.MimeUtility;
 import jakarta.mail.search.FlagTerm;
+import org.apache.tika.Tika;
+import org.apache.tika.exception.TikaException;
 import org.example.constants.Const;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 public class EmailMonitorService {
@@ -74,75 +82,108 @@ public class EmailMonitorService {
 
         if (content instanceof String) {
             // Простое текстовое письмо
-            return (String) content;
+            return cleanText((String) content);
         } else if (content instanceof Multipart) {
             // Составное письмо (MIME)
-            return getTextFromMultipart((Multipart) content);
+            return extractTextFromMultipart((Multipart) content);
         }
 
         return "Не удалось извлечь тело письма";
     }
 
-    private String getTextFromMultipart(Multipart multipart) throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
-        StringBuilder textBuilder = new StringBuilder();
+    private String extractTextFromMultipart(Multipart multipart) throws Exception {
+        StringBuilder textContent = new StringBuilder();
+        boolean textFound = false;
 
         for (int i = 0; i < multipart.getCount(); i++) {
             BodyPart bodyPart = multipart.getBodyPart(i);
-            String contentType = bodyPart.getContentType();
+            String contentType = bodyPart.getContentType().toLowerCase();
 
-            if (bodyPart.isMimeType("text/plain")) {
-                // Текстовая часть
-                textBuilder.append(normalizeToJson(bodyPart.getContent().toString()));
-            } else if (bodyPart.isMimeType("text/html")) {
-                // HTML‑часть — преобразуем в текст
+            if (bodyPart.isMimeType("text/plain") && !textFound) {
+                // Берём только первую найденную plain‑text часть
+                textContent.append(bodyPart.getContent().toString()).append("\n");
+                textFound = true;
+            } else if (bodyPart.isMimeType("text/html") && !textFound) {
+                // Если plain‑text не найден, берём HTML и конвертируем
                 String htmlContent = bodyPart.getContent().toString();
-                textBuilder.append(normalizeToJson(htmlToText(htmlContent)));
-            } else if (bodyPart.getContent() instanceof Multipart) {
-                // Вложенная Multipart‑структура
-                textBuilder.append(getTextFromMultipart((Multipart) bodyPart.getContent()));
+                textContent.append(htmlToText(htmlContent)).append("\n");
+                textFound = true;
+            } else if (bodyPart.isMimeType("multipart/*")) {
+                // Рекурсивно обрабатываем вложенные Multipart
+                Multipart nestedMultipart = (Multipart) bodyPart.getContent();
+                textContent.append(extractTextFromMultipart(nestedMultipart));
             }
-            // Вложения (attachments) пропускаем — они не входят в тело письма
+            // Вложения пропускаем
         }
 
-        return mapper.writeValueAsString(textBuilder.toString()).replace("\"", "");
-        // return textBuilder.toString();
+        return cleanText(textContent.toString());
     }
 
+    public String extractText(Message message) {
+        try {
+            Tika tika = new Tika();
+            try (InputStream emailStream = message.getInputStream()) {
+                String extractedText = tika.parseToString(emailStream);
+                return cleanText(extractedText);
+            }
+        } catch (IOException e) {
+            return "Ошибка чтения письма: " + e.getMessage();
+        } catch (TikaException e) {
+            return "Ошибка парсинга Tika: " + e.getMessage();
+        } catch (Exception e) {
+            return "Неожиданная ошибка: " + e.getMessage();
+        }
+    }
+
+    /**
+     * Конвертирует HTML в простой текст
+     */
     private String htmlToText(String html) {
-        return html
-                .replaceAll("&nbsp;", " ")
-                .replaceAll("<[^>]*>", "")  // Удаляем все теги
-                .replaceAll("\\s+", " ")     // Заменяем множественные пробелы на один
+        return html.replaceAll("<[^>]+>", "")  // удаляем теги
+                .replaceAll("&nbsp;", " ")  // заменяем HTML‑сущности
+                .replaceAll("&amp;", "&")
+                .replaceAll("&quot;", "\"")
+                .replaceAll("&#39;", "'")
+                .replaceAll("\\s+", " ")      // нормализуем пробелы
                 .trim();
     }
 
-    private String normalizeToJson(String badText) {
-        badText = badText.replace("\"", " ").replace("'", " ");
-
-//        badText = badText.replaceAll("\\n", " ");
-        int htmlBegin = !badText.contains("<HTML>") ? badText.indexOf("<html>"): -1 ;
-        int htmlEnd = !badText.contains("</HTML>")? badText.indexOf("</html>") : -1;
-        if (htmlBegin != -1 || htmlEnd != -1) {
-            htmlEnd += "</HTML>".length();
-            badText = badText.substring(0, htmlBegin) + badText.substring(htmlEnd);
+    /**
+     * Дополнительная очистка извлечённого текста
+     * @param text исходный текст
+     * @return очищенный текст
+     */
+    private String cleanText(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return "Текст не найден";
         }
 
-        int resentIndex = badText.indexOf("Пересылаемое сообщение");
-        if (resentIndex != -1) {
-            badText = badText.substring(resentIndex);
-            int tema = badText.indexOf("Тема");
-            if (tema != -1) {
-                badText = badText.substring(tema);
-                int newlineIndex = badText.indexOf('\n');
-                if (newlineIndex != -1) {
-                    badText = badText.substring(newlineIndex + 1).trim();
-                }
-            }
-        }
+        // Очищаем HTML, оставляя только текст
+        String plainText = Jsoup.clean(text, Safelist.none());
 
-        return badText;
-
-
+        //Нормализуем переносы и пробелы
+        plainText = plainText.replaceAll("\\r\\n|\\r", "\n")
+                .replaceAll("\\n\\s*\\n", "\n\n")
+                .replaceAll("\\s+", " ")
+                .trim();
+        System.out.println(plainText);
+        return plainText;
     }
+
+    /**
+     * Извлекает только основную часть письма (без заголовков и служебной информации)
+     * @param message email-сообщение
+     * @return основной текст письма
+     */
+    public String extractMainBody(Message message) {
+        String fullText = extractText(message);
+
+        // Удаляем стандартные заголовки email, если они есть в тексте
+        String[] parts = fullText.split("(?:From:|To:|Subject:|Date:)", 2);
+        if (parts.length > 1) {
+            return cleanText(parts[1]);
+        }
+        return fullText;
+    }
+
 }

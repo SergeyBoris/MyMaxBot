@@ -2,6 +2,7 @@ package org.example.services;
 
 import org.example.constants.Const;
 import org.example.entity.User;
+import org.example.util.PhotosToPdfConverter;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +11,8 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class SaveFileService {
@@ -60,10 +63,11 @@ public class SaveFileService {
         }
         if (photoUrls != null) {
             int count = 0;
+            List<String> photoUrlsList = new ArrayList<>();
             for (String photoUrl : photoUrls) {
                 count++;
-                String fileNamePhoto = Const.ANSWER_ATTACHMENT_FILE_NAME_PREFIX + reqNumber + "/" + reqNumber + "_" + count + ".jpg";
-
+                String fileNamePhoto = Const.ANSWER_ATTACHMENT_FILE_NAME_PREFIX + reqNumber + "/" + reqNumber + "_" + count + ".webp";
+                photoUrlsList.add(fileNamePhoto);
                 Path filePathPhoto = Paths.get(fileNamePhoto);
                 try {
                     Files.createDirectories(filePathPhoto.getParent());
@@ -81,6 +85,7 @@ public class SaveFileService {
                     e.printStackTrace();
                 }
             }
+            PhotosToPdfConverter.convertPhotosToPdf(photoUrlsList,Const.ANSWER_ATTACHMENT_FILE_NAME_PREFIX + reqNumber + "/" + reqNumber + ".pdf");
         }
     }
 }
