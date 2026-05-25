@@ -3,8 +3,10 @@ package org.example.processors;
 import org.example.constants.Const;
 import org.example.db.MapDB;
 import org.example.entity.Attachment;
+import org.example.entity.Contragents.Pfi;
 import org.example.entity.Req;
 import org.example.entity.Update;
+import org.example.services.ContragentFactory;
 import org.example.services.MessageService;
 import org.example.services.RequestService;
 import org.example.services.SaveFileService;
@@ -35,12 +37,13 @@ public class CallbackProcessor {
         if (update.getCallBack() != null) {
             String payload = update.getCallBack().getPayload();
 
-            if (payload.equals("all_requests_alfa")) {
-                List<Req> allReq = requestService.getAllRequests("PBF");
-                if (allReq != null && !allReq.isEmpty()) {
-                    for (Req req : allReq) {
-                        messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
-                    }
+            switch (payload) {
+                case "all_requests_alfa" -> {
+                    List<Req> allReq = requestService.getAllRequests("PBF");
+                    if (allReq != null && !allReq.isEmpty()) {
+                        for (Req req : allReq) {
+                            messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
+                        }
 
 //                Map<String, Req> allRequests = db.getAllRequests();
 //
@@ -63,31 +66,32 @@ public class CallbackProcessor {
 //                        }
 //
 //                    }
-                } else
-                    messageService.sendSimpleMessage(senderChatId, "нет заявок", Const.KEYBOARD_ALL_REQ);
+                    } else
+                        messageService.sendSimpleMessage(senderChatId, "нет заявок", Const.KEYBOARD_ALL_REQ);
 
-            } else if (payload.equals("close_request") || payload.equals("localized")) {
-                long userId = update.getCallBack().getUser().getUserId();
-                String[] split = update.getMessage().getBody().getText().split("\n");
-                String reqNumber = split[0];
-                usersSessions.put(userId, new UserUploadSession(reqNumber));
+                }
+                case "close_request", "localized" -> {
+                    long userId = update.getCallBack().getUser().getUserId();
+                    String[] split = update.getMessage().getBody().getText().split("\n");
+                    String reqNumber = split[0];
+                    usersSessions.put(userId, new UserUploadSession(reqNumber));
 
 
-                if (payload.equals("close_request")) {
-                    usersSessions.get(userId).setStatus("Закрыто");
+                    if (payload.equals("close_request")) {
+                        usersSessions.get(userId).setStatus("Закрыто");
 //                    String text = "Статус: Закрыто\n";
 //                    UserSessionUtil.addText(userId,text);
 
-                } else if (payload.equals("localized")) {
-                    usersSessions.get(userId).setStatus("Локализовано");
+                    } else if (payload.equals("localized")) {
+                        usersSessions.get(userId).setStatus("Локализовано");
 //                    String text = "Статус: Локализовано\n";
 //                    UserSessionUtil.addText(userId,text);
 
+                    }
+                    messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "приложите фото и нажмите \"готово\"", Const.KEYBOARD_END_PHOTO);
                 }
-                messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "приложите фото и нажмите \"готово\"", Const.KEYBOARD_END_PHOTO);
-
-            } else if (payload.equals("end_photo")) {
-                if (usersSessions != null && usersSessions.containsKey(update.getCallBack().getUser().getUserId())) {
+                case "end_photo" -> {
+                    if (usersSessions != null && usersSessions.containsKey(update.getCallBack().getUser().getUserId())) {
 
                         long userId = update.getCallBack().getUser().getUserId();
                         UserUploadSession userUploadSession = usersSessions.get(userId);
@@ -104,24 +108,33 @@ public class CallbackProcessor {
                         usersSessions.remove(userId);
                         messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "Заявка закрыта", Const.KEYBOARD_ALL_REQ);
 
-                } else {
-                    messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "МЕНЮ", Const.KEYBOARD_ALL_REQ);
-                }
-            } else if (payload.equals("all_requests_hendz")) {
-                List<Req> allReq = requestService.getAllRequests("HENDZ");
-                if (allReq != null && !allReq.isEmpty()) {
-                    for (Req req : allReq) {
-                        messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ALL_REQ);
+                    } else {
+                        messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "МЕНЮ", Const.KEYBOARD_ALL_REQ);
                     }
-                }else {
-                    messageService.sendSimpleMessage(senderChatId,"нет заявок", Const.KEYBOARD_ALL_REQ);
                 }
+                case "all_requests_hendz" -> {
+                    List<Req> allReq = requestService.getAllRequests("HENDZ");
+                    if (allReq != null && !allReq.isEmpty()) {
+                        for (Req req : allReq) {
+                            messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ALL_REQ);
+                        }
+                    } else {
+                        messageService.sendSimpleMessage(senderChatId, "нет заявок", Const.KEYBOARD_ALL_REQ);
+                    }
 
-            } else if (payload.equals("cancel_work_with_req")) {
-                usersSessions.remove(update.getCallBack().getUser().getUserId());
-                messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "Работа с заявкой прекращена", Const.KEYBOARD_ALL_REQ);
-            } else {
-                System.out.println("какимто чудом узерсессия нулевая");
+                }
+                case "cancel_work_with_req" -> {
+                    usersSessions.remove(update.getCallBack().getUser().getUserId());
+                    messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "Работа с заявкой прекращена", Const.KEYBOARD_ALL_REQ);
+                }
+                case "all_requests_pfi" -> {
+                    List<Req> pfi = requestService.getAllRequests("PFI");
+                    for (Req req : pfi) {
+                        messageService.sendSimpleMessage(senderChatId,req.toString(),Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
+                    }
+
+                }
+                default -> System.out.println("какимто чудом узерсессия нулевая");
             }
 
 

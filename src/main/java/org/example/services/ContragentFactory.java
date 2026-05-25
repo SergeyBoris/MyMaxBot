@@ -3,10 +3,7 @@ package org.example.services;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.example.db.MapDB;
-import org.example.entity.Contragents.Contragent;
-import org.example.entity.Contragents.Hendz;
-import org.example.entity.Contragents.Pbf;
-import org.example.entity.Contragents.Strike;
+import org.example.entity.Contragents.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +21,7 @@ public class ContragentFactory {
         contragentMap.put("PBF", new Pbf(messageService,db));
         contragentMap.put("STRIKE", new Strike(messageService,db,emailMonitorService));
         contragentMap.put("HENDZ", new Hendz(messageService,db,emailMonitorService));
+        contragentMap.put("PFI", new Pfi(messageService,db));
     }
 
 
