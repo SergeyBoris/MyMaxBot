@@ -8,6 +8,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -22,10 +23,13 @@ public class HendzCloseRequest {
             .build();
     public static void main(String[] args) {
         HendzCloseRequest hendz = new HendzCloseRequest();
+        List<File> photos = new ArrayList<>();
         File photo = new File("C:/photo.jpg");
+        photos.add(photo);
+
 
         try {
-            boolean success = hendz.closeTicket("1000849", photo);
+            boolean success = hendz.closeTicket("1000849", photos);
             System.out.println("Успешно: " + success);
         } catch (IOException e) {
             e.printStackTrace();
