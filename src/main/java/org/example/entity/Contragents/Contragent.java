@@ -12,10 +12,13 @@ public interface Contragent {
 
     List<Req> getAllRequests();
     Optional<Req> getRequestByNumber(String requestNumber);
-    String getContragentType();
+    String getContragentName();
     void searchReqRest(HttpClient client, ObjectMapper mapper);
     void addReqToCash(Req req);
     void processNewEmail(Message message);
+    default boolean closeReq(Req req) {
+        return true;
+    }
 
 
 }

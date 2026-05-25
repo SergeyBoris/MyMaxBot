@@ -1,10 +1,7 @@
 package org.example.entity.Contragents;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.mail.BodyPart;
 import jakarta.mail.Message;
-import jakarta.mail.MessagingException;
-import jakarta.mail.Multipart;
 import lombok.AllArgsConstructor;
 import org.example.constants.Const;
 import org.example.db.MapDB;
@@ -12,7 +9,6 @@ import org.example.entity.Req;
 import org.example.services.EmailMonitorService;
 import org.example.services.MessageService;
 
-import java.io.IOException;
 import java.net.http.HttpClient;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +23,9 @@ public class Strike implements Contragent {
     private final MapDB db;
     private EmailMonitorService emailMonitorService;
 
+
+    private final String name;
+
     @Override
     public List<Req> getAllRequests() {
         return cashedRequests.values().stream().toList();
@@ -34,12 +33,12 @@ public class Strike implements Contragent {
 
     @Override
     public Optional<Req> getRequestByNumber(String requestNumber) {
-        return Optional.empty();
+        return Optional.ofNullable(cashedRequests.get(requestNumber));
     }
 
     @Override
-    public String getContragentType() {
-        return "";
+    public String getContragentName() {
+        return name;
     }
 
     @Override

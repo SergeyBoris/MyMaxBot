@@ -74,7 +74,9 @@ public class CallbackProcessor {
                     long userId = update.getCallBack().getUser().getUserId();
                     String[] split = update.getMessage().getBody().getText().split("\n");
                     String reqNumber = split[0];
-                    usersSessions.put(userId, new UserUploadSession(reqNumber));
+                    String contragent = split[1];
+                    System.out.println("КОНТРАГЕНТ : " + contragent);
+                    usersSessions.put(userId, new UserUploadSession(reqNumber, contragent));
 
 
                     if (payload.equals("close_request")) {
@@ -82,7 +84,7 @@ public class CallbackProcessor {
 //                    String text = "Статус: Закрыто\n";
 //                    UserSessionUtil.addText(userId,text);
 
-                    } else if (payload.equals("localized")) {
+                    } else {
                         usersSessions.get(userId).setStatus("Локализовано");
 //                    String text = "Статус: Локализовано\n";
 //                    UserSessionUtil.addText(userId,text);
@@ -97,6 +99,7 @@ public class CallbackProcessor {
                         UserUploadSession userUploadSession = usersSessions.get(userId);
                         String text = usersSessions.get(userId).getText();
                         String status = usersSessions.get(userId).getStatus();
+                        String contragent = usersSessions.get(userId).getContragent();
 
                         System.out.println(userId);
                         List<String> photoUrls = userUploadSession.getPhotoUrls();
@@ -106,7 +109,12 @@ public class CallbackProcessor {
                             db.removeRequest(requestNumber);
                         }
                         usersSessions.remove(userId);
-                        messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "Заявка закрыта", Const.KEYBOARD_ALL_REQ);
+                        boolean successClosed = requestService.closeRequest(contragent, requestNumber, photoUrls);
+                        if (successClosed) {
+                            messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "Заявка закрыта", Const.KEYBOARD_ALL_REQ);
+                        } else {
+                            messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "Ошибка закрытия заявки", Const.KEYBOARD_ALL_REQ);
+                        }
 
                     } else {
                         messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "МЕНЮ", Const.KEYBOARD_ALL_REQ);
@@ -130,7 +138,7 @@ public class CallbackProcessor {
                 case "all_requests_pfi" -> {
                     List<Req> pfi = requestService.getAllRequests("PFI");
                     for (Req req : pfi) {
-                        messageService.sendSimpleMessage(senderChatId,req.toString(),Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
+                        messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
                     }
 
                 }

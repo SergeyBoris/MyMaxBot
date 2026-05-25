@@ -18,10 +18,10 @@ public class ContragentFactory {
     public ContragentFactory(MessageService messageService, MapDB db, EmailMonitorService emailMonitorService) {
         this.messageService = messageService;
         this.emailMonitorService = emailMonitorService;
-        contragentMap.put("PBF", new Pbf(messageService,db));
-        contragentMap.put("STRIKE", new Strike(messageService,db,emailMonitorService));
-        contragentMap.put("HENDZ", new Hendz(messageService,db,emailMonitorService));
-        contragentMap.put("PFI", new Pfi(messageService,db));
+        contragentMap.put("PBF", new Pbf(messageService,db,"PBF"));
+        contragentMap.put("STRIKE", new Strike(messageService,db,emailMonitorService,"STRIKE"));
+        contragentMap.put("HENDZ", new Hendz(messageService,db,emailMonitorService,"HENDZ"));
+        contragentMap.put("PFI", new Pfi(messageService,db,"PFI"));
     }
 
 

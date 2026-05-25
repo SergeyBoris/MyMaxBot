@@ -12,7 +12,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -52,12 +51,15 @@ public class Pfi implements Contragent {
     private final Map<String, Req> cashedRequests;
     private  HttpClient client = HttpClient.newHttpClient();
     private String cookie;
+    private final String name;
 
-    public Pfi(MessageService messageService, MapDB db){
+    public Pfi(MessageService messageService, MapDB db,String name){
         this.messageService = messageService;
         this.db = db;
         this.cookie = login();
+        this.name = name;
         cashedRequests = new ConcurrentHashMap<>();
+
     }
     @Override
     public List<Req> getAllRequests() {
@@ -66,12 +68,17 @@ public class Pfi implements Contragent {
 
     @Override
     public Optional<Req> getRequestByNumber(String requestNumber) {
-        return Optional.empty();
+        return Optional.ofNullable(cashedRequests.get(requestNumber));
     }
 
     @Override
-    public String getContragentType() {
-        return "";
+    public boolean closeReq(Req req) {
+        return true;
+    }
+
+    @Override
+    public String getContragentName() {
+        return name;
     }
 
     @Override
@@ -163,6 +170,7 @@ public class Pfi implements Contragent {
                         if (result.has("ticketHtml")) {
                             req = parseTicketModal( result.get("ticketHtml").asText(),req);
                             req.setRequestNumber(requestNumber);
+                            req.setContragent(this);
                             reqList.add(req);
                         }
                     }
@@ -292,4 +300,5 @@ public class Pfi implements Contragent {
         }
         throw new RuntimeException("Не найден " + fieldName);
     }
+
 }

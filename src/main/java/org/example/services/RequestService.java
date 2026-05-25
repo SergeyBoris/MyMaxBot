@@ -29,4 +29,15 @@ public class RequestService {
         Contragent contragent = contragentFactory.getContragent(contragentType);
         return contragent.getRequestByNumber(requestNumber);
     }
+
+    public boolean closeRequest(String contragentType, String requestNumber, List<String> photoUrls) {
+        Contragent contragent = contragentFactory.getContragent(contragentType);
+        Optional<Req> requestByNumber = contragent.getRequestByNumber(requestNumber);
+         // Проверяем, что заявка найдена
+        if (requestByNumber.isEmpty()) {
+            System.out.println("Заявка " + requestNumber + " не найдена");
+            return false;
+        }
+        return contragent.closeReq(requestByNumber.get());  // извлекаем Req из Optional
+    }
 }

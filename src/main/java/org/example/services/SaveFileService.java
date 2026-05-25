@@ -88,4 +88,8 @@ public class SaveFileService {
             PhotosToPdfConverter.convertPhotosToPdf(photoUrlsList,Const.ANSWER_ATTACHMENT_FILE_NAME_PREFIX + reqNumber + "/" + reqNumber + ".pdf");
         }
     }
+
+    private void convertToJpg(){
+
+    }
 }

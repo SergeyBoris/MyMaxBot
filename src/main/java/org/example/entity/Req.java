@@ -55,6 +55,7 @@ public class Req {
         String formattedDate = creationTime != null ? creationTime.format(formatter) : null;
         StringBuilder textBuilder = new StringBuilder();
         textBuilder.append(requestNumber).append("\n");
+        textBuilder.append(contragent.getContragentName()).append("\n");
         textBuilder.append(requestText);
 
         appendIfNotNull(textBuilder, "TID", TID);
@@ -62,7 +63,6 @@ public class Req {
         appendIfNotNull(textBuilder, "priority", priority);
         appendIfNotNull(textBuilder, "Время создания", formattedDate);
         appendIfNotNull(textBuilder, "Адрес", requestAddress);
-        appendIfNotNull(textBuilder, "contragent", contragent);
         appendIfNotNull(textBuilder, "sla", sla);
 
 

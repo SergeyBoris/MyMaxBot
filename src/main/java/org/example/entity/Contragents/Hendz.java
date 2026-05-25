@@ -9,6 +9,7 @@ import org.example.db.MapDB;
 import org.example.entity.Req;
 import org.example.services.EmailMonitorService;
 import org.example.services.MessageService;
+
 import java.net.http.HttpClient;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ public class Hendz implements Contragent {
     private final MessageService messageService;
     private final MapDB db;
     private EmailMonitorService emailMonitorService;
+    private final String name;
 
 
     @Override
@@ -37,9 +39,10 @@ public class Hendz implements Contragent {
     }
 
     @Override
-    public String getContragentType() {
-        return "";
+    public String getContragentName() {
+        return name;
     }
+
 
     @Override
     public void searchReqRest(HttpClient client, ObjectMapper mapper) {
@@ -78,7 +81,7 @@ public class Hendz implements Contragent {
                 for (Long user : db.getAllUsers()) {
                     messageService.sendSimpleMessage(db.getUserChatId(user), messageText, Const.KEYBOARD_ALL_REQ);
                 }
-                    cashedRequests.remove(req.getRequestNumber());
+                cashedRequests.remove(req.getRequestNumber());
 
             }
 
@@ -121,19 +124,17 @@ public class Hendz implements Contragent {
         }
         int slaBeginIndex = messageBody.indexOf("время (PFT)");
 
-        if (slaBeginIndex != -1 ) {
-             pattern = Pattern.compile("\\b\\d{2}\\.\\d{2}\\.\\d{4} \\d{2}:\\d{2}:\\d{2}\\b");
-             matcher = pattern.matcher(messageBody.substring(slaBeginIndex));
+        if (slaBeginIndex != -1) {
+            pattern = Pattern.compile("\\b\\d{2}\\.\\d{2}\\.\\d{4} \\d{2}:\\d{2}:\\d{2}\\b");
+            matcher = pattern.matcher(messageBody.substring(slaBeginIndex));
 
             if (matcher.find()) {
                 String result = matcher.group();
                 req.setSla(result);
             }
-            }
+        }
 
-
-
-
+        req.setContragent(this);
         return req;
     }
 }

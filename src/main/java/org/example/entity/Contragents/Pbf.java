@@ -26,11 +26,13 @@ public class Pbf implements Contragent {
     private final Map<String, Req> cashedRequests;
     private final MessageService messageService;
     private final MapDB db;
+    private final String name;
 
-    public Pbf(MessageService messageService, MapDB db) {
+    public Pbf(MessageService messageService, MapDB db,String name) {
         this.db = db;
         this.messageService = messageService;
         cashedRequests = new ConcurrentHashMap<>();
+        this.name = name;
     }
 
     @Override
@@ -47,7 +49,7 @@ public class Pbf implements Contragent {
 
     @Override
     public Optional<Req> getRequestByNumber(String requestNumber) {
-        return Optional.empty();
+        return Optional.ofNullable(cashedRequests.get(requestNumber));
     }
 
     @Override
@@ -144,6 +146,7 @@ public class Pbf implements Contragent {
             req.setCreationTime(ldt);
             req.setToUsersId(db.getAllUsers().stream().toList());
             req.setActual(false);
+            req.setContragent(this);
             allRequests.add(req);
         });
         Set<String> newNumbers = allRequests.stream()
@@ -162,8 +165,13 @@ public class Pbf implements Contragent {
     }
 
     @Override
-    public String getContragentType() {
-        return "";
+    public String getContragentName() {
+        return name;
+    }
+
+    @Override
+    public boolean closeReq(Req req) {
+        return true;
     }
 
     @Override
