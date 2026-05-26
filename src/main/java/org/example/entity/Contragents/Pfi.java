@@ -65,9 +65,7 @@ public class Pfi implements Contragent {
     }
     @Override
     public List<Req> getAllRequests() {
-        if(cashedRequests == null || cashedRequests.isEmpty()){
-            searchReqRest(HttpClient.newHttpClient(), new ObjectMapper() ); //todo
-        }
+
         return cashedRequests.values().stream().toList();
     }
 
@@ -79,8 +77,8 @@ public class Pfi implements Contragent {
     @Override
     public boolean closeReq(Req req, UserUploadSession userUploadSession) {
 
-        HendzCloseRequest.close(req, userUploadSession,cookie);
-        return true;
+
+        return  HendzCloseRequest.close(req, userUploadSession,cookie);
     }
 
     @Override

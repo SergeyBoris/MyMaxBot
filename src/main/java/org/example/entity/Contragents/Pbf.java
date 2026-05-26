@@ -4,16 +4,21 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.Message;
+import okhttp3.*;
 import org.example.constants.Const;
 import org.example.constants.ConstPbf;
 import org.example.db.MapDB;
 import org.example.entity.Req;
 import org.example.services.MessageService;
+import org.example.util.UserUploadSession;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,12 +32,50 @@ public class Pbf implements Contragent {
     private final MessageService messageService;
     private final MapDB db;
     private final String name;
+    private final OkHttpClient client = new OkHttpClient();
 
     public Pbf(MessageService messageService, MapDB db,String name) {
         this.db = db;
         this.messageService = messageService;
         cashedRequests = new ConcurrentHashMap<>();
         this.name = name;
+    }
+
+    @Override
+    public boolean closeReq(Req req, UserUploadSession userUploadSession) {
+        String reqNumber = req.getRequestNumber();
+        List<Path> files = userUploadSession.getSavedJpgPaths();
+        String url = "https://service.unitodi.ru/rest/api/2/issue/" + reqNumber + "/attachments";
+
+        MultipartBody.Builder builder = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM);
+
+        for (Path filePath : files) {
+            File file = filePath.toFile();
+            RequestBody fileBody = RequestBody.create(
+                    file,
+                    okhttp3.MediaType.parse("application/octet-stream")
+            );
+            builder.addFormDataPart("file", file.getName(), fileBody);
+        }
+
+        Request request = new Request.Builder()
+                .url(url)
+                .post(builder.build())
+                .addHeader("Authorization", ConstPbf.AUTHORISATION)
+                .addHeader("X-Atlassian-Token", "no-check")
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            System.out.println("Status: " + response.code());
+            System.out.println("Response: " + response.body().string());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        if(userUploadSession.getText() !=null && !userUploadSession.getText().isEmpty()){
+            addComment(reqNumber, userUploadSession.getText());
+        }
+        return true;
     }
 
     @Override
@@ -204,6 +247,30 @@ public class Pbf implements Contragent {
         );
 
         return mapper.writeValueAsString(searchRequest);
+    }
+
+    private void addComment(String reqNumber, String comment){
+        String url = "https://service.unitodi.ru/rest/api/2/issue/" + reqNumber + "/comment";
+
+        // Формируем JSON с комментарием
+        String jsonBody = String.format(
+                "{\"body\": \"%s\"}",
+                comment.replace("\"", "\\\"").replace("\n", "\\n")
+        );
+
+        Request request = new Request.Builder()
+                .url(url)
+                .post(RequestBody.create(jsonBody, MediaType.parse("application/json")))
+                .addHeader("Authorization", ConstPbf.AUTHORISATION)
+                .addHeader("Content-Type", "application/json")
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            System.out.println("Status: " + response.code());
+            System.out.println("Response: " + response.body().string());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
 
