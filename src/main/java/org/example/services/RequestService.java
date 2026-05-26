@@ -3,8 +3,10 @@ package org.example.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.entity.Contragents.Contragent;
 import org.example.entity.Req;
+import org.example.util.UserUploadSession;
 
 import java.net.http.HttpClient;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,14 +32,13 @@ public class RequestService {
         return contragent.getRequestByNumber(requestNumber);
     }
 
-    public boolean closeRequest(String contragentType, String requestNumber, List<String> photoUrls) {
-        Contragent contragent = contragentFactory.getContragent(contragentType);
-        Optional<Req> requestByNumber = contragent.getRequestByNumber(requestNumber);
-         // Проверяем, что заявка найдена
-        if (requestByNumber.isEmpty()) {
-            System.out.println("Заявка " + requestNumber + " не найдена");
+    public boolean closeRequest(UserUploadSession userUploadSession) {
+        Contragent contragent = contragentFactory.getContragent(userUploadSession.getContragent());
+        Req req = getRequestByNumber(userUploadSession.getContragent(),userUploadSession.getRequestNumber()).orElse(null);
+        if (req == null) {
             return false;
         }
-        return contragent.closeReq(requestByNumber.get());  // извлекаем Req из Optional
+
+        return contragent.closeReq(req, userUploadSession);  // извлекаем Req из Optional
     }
 }

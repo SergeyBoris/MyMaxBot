@@ -12,7 +12,9 @@ import org.example.entity.Contragents.Contragent;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -41,6 +43,8 @@ public class Req {
     private Contragent contragent;
     @JsonProperty("sla")
     private String sla;
+    @JsonProperty("params")
+    public Map<String, String> params = new HashMap<>();
     @JsonIgnore
     private boolean actual;
 

@@ -31,6 +31,8 @@ public class Const {
     public static String MAIL_FOLDER_TO_SCAN;
     public static String MAIL_USER_NAME;
     public static String MAIL_PASSWORD;
+    public static String PFI_LOGIN;
+    public static String PFI_PASSWORD;
     public static final Button BTN_ALL_REQ_ALFA = new Button("callback","Альфа","all_requests_alfa");
     public static final Button BTN_ALL_REQ_HENDZ = new Button("callback","Хендз","all_requests_hendz");
     public static final Button BTN_ALL_REQ_PFI = new Button("callback","ПФИ","all_requests_pfi");
@@ -67,6 +69,8 @@ public class Const {
             MAIL_FOLDER_TO_SCAN = config.getMailFolderToScan();
             MAIL_USER_NAME = config.getMailUserName();
             MAIL_PASSWORD = config.getMailPassword();
+            PFI_LOGIN = config.getPfiLogin();
+            PFI_PASSWORD = config.getPfiPassword();
 
 
         } catch (Exception e) {

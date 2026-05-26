@@ -7,6 +7,8 @@ import org.example.constants.Const;
 import org.example.db.MapDB;
 import org.example.entity.Req;
 import org.example.services.MessageService;
+import org.example.util.HendzCloseRequest;
+import org.example.util.UserUploadSession;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -63,6 +65,9 @@ public class Pfi implements Contragent {
     }
     @Override
     public List<Req> getAllRequests() {
+        if(cashedRequests == null || cashedRequests.isEmpty()){
+            searchReqRest(HttpClient.newHttpClient(), new ObjectMapper() ); //todo
+        }
         return cashedRequests.values().stream().toList();
     }
 
@@ -72,7 +77,9 @@ public class Pfi implements Contragent {
     }
 
     @Override
-    public boolean closeReq(Req req) {
+    public boolean closeReq(Req req, UserUploadSession userUploadSession) {
+
+        HendzCloseRequest.close(req, userUploadSession,cookie);
         return true;
     }
 
@@ -84,6 +91,7 @@ public class Pfi implements Contragent {
     @Override
     public void searchReqRest(HttpClient client, ObjectMapper mapper) {
         List<Req> allRequests = new ArrayList<>();
+        System.out.println("ПФИ ИЩЕТ НАЧАЛО");
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://work.hendz.ru:10294/pfi"))
                 .header("Cookie", cookie)
@@ -122,6 +130,7 @@ public class Pfi implements Contragent {
                 addReqToCash(req);
             }
         }
+        System.out.println("ПФИ ИЩЕТ КОНЕЦ");
     }
 
     @Override
@@ -167,10 +176,14 @@ public class Pfi implements Contragent {
                     // Извлекаем HTML из результата
                     if (json.has("result")) {
                         JsonNode result = json.get("result");
+                        System.out.println("Весь JSON: " + json.toPrettyString());
                         if (result.has("ticketHtml")) {
                             req = parseTicketModal( result.get("ticketHtml").asText(),req);
                             req.setRequestNumber(requestNumber);
                             req.setContragent(this);
+                            req.params.put("outgoing",result.get("outgoing").asText());
+                            System.out.println("json.get(utgoingtextValue()"  + result.get("outgoing").asText());
+                            req.params.put("ticketId",ticketId);
                             reqList.add(req);
                         }
                     }
@@ -184,7 +197,6 @@ public class Pfi implements Contragent {
     }
     public Req parseTicketModal(String html,Req req) {
         Document doc = Jsoup.parse(html);
-
         // Берём таблицу
         Element table = doc.select("table.table").first();
         if (table == null) {
@@ -259,8 +271,8 @@ public class Pfi implements Contragent {
             System.out.println(token);
             String formData = "_session_key=" + URLEncoder.encode(sessionKey, StandardCharsets.UTF_8) +
                     "&_token=" + URLEncoder.encode(token, StandardCharsets.UTF_8) +
-                    "&login=" + URLEncoder.encode("support@unionsrv.ru", StandardCharsets.UTF_8) +
-                    "&password=" + URLEncoder.encode("REMOVED", StandardCharsets.UTF_8) +
+                    "&login=" + URLEncoder.encode(Const.PFI_LOGIN, StandardCharsets.UTF_8) +
+                    "&password=" + URLEncoder.encode(Const.PFI_PASSWORD, StandardCharsets.UTF_8) +
                     "&remember=1";
 
             request = HttpRequest.newBuilder()

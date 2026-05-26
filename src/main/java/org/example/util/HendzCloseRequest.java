@@ -6,64 +6,81 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.example.entity.Req;
+
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class HendzCloseRequest {
 
-    private static final String COOKIE = "user_auth=eyJpdiI6IklJYTF6VVRTV25neGVRU3Jja09sb1E9PSIsInZhbHVlIjoiQTVCalZBaFNoXC9zZDJQTnZyOG1qdENwNm1TUlRPKzVuTklQZVlXaVZFZGFGcHFFb2ZVcFkwV3JCS0Jzb3JOc3RSNmhxMnFUcTk2UGZpK3B5aVVQbnFGZDdWZXNUVEloZUF0UUJ0WlBXYmloTkpXemYwQkg5cHRMZnRHUWdYSjlLRUFwK1ljdTFCSXJPS0ZoNU9UTkRvZz09IiwibWFjIjoiOGQ0NDZiZWQyNzM0ZmMxMjZhYTlhMDBiMjZmZTczMDY4NDFkZDMxMDViNjQ3NjdkZTZhZDNjODFkNDA5MzlkNiJ9; october_session=eyJpdiI6IjgxMmJadmQ0RzhZK0w1c0V4bGFxdUE9PSIsInZhbHVlIjoiY3R1bWpRbHp2NTBvVFwvb2krclJlcWM2dXNLZUprZmpGMmVIOSsyelwvS1pFXC83K0VmZmg1QVwvRXFLekJFWVFEbWJkdnpwK3FoTXN0VjJYR2Y5VFZOZDdRZU9WY0FIOUowRk9BSWlvbmNZa0I2bVJ0Y3E5dFFZYlVyMThMRHorbDA1IiwibWFjIjoiZmVjYTYyMTBkMWFkOTM1OGMxYmMyOGE4OTljZWJkMzI5MWQxOGFiN2E3MTM4ZWFlOGMxY2I3OGM3ZTNlMzU4NiJ9";
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 YaBrowser/26.4.0.0 Safari/537.36";
 
-    private final OkHttpClient client = new OkHttpClient.Builder()
+    private static final OkHttpClient client = new OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .build();
-    public static void main(String[] args) {
-        HendzCloseRequest hendz = new HendzCloseRequest();
-        List<File> photos = new ArrayList<>();
-        File photo = new File("C:/photo.jpg");
-        photos.add(photo);
 
-
-        try {
-            boolean success = hendz.closeTicket("1000849", photos);
-            System.out.println("Успешно: " + success);
-        } catch (IOException e) {
-            e.printStackTrace();
+    public static boolean close(Req req, UserUploadSession userUploadSession,String cookie) {
+        String ticketId = req.params.get("ticketId");;
+        String outgoingId = req.params.get("outgoing");
+        LocalDateTime timeNow = LocalDateTime.now();
+        DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter formatterTime = DateTimeFormatter.ofPattern("HH:mm");
+        String workDate = timeNow.format(formatterDate);
+        LocalDateTime beginTime = timeNow.minusMinutes(10);
+        String arrivalTime = beginTime.format(formatterTime);
+        String endTime = timeNow.format(formatterTime);
+        String statusUid;
+        String closeMode;
+        String testWorkDescription = userUploadSession.getText();
+        System.out.println("testWorkDescription = " + testWorkDescription);
+        String workDescription = "Замятия не обнаружено калибровка ок внесение ок";
+        List<Path> photos = userUploadSession.getSavedJpgPaths();
+        if (userUploadSession.getStatus().equals("Закрыто")){
+             statusUid = "518";
+             closeMode = "onsite";
+        }else {
+            statusUid = "639";
+            closeMode = "no_onsite";
         }
-    }
-    public boolean closeTicket(String outgoingId, List<File> photos) throws IOException {
+
         String url = "https://work.hendz.ru:10294/pfi/close/" + outgoingId;
+
 
         MultipartBody.Builder builder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 // Основные поля
-                .addFormDataPart("ticket_id", "21851")
-                .addFormDataPart("outgoing", "1000849")
+                .addFormDataPart("ticket_id", ticketId)
+                .addFormDataPart("outgoing", outgoingId)
                 .addFormDataPart("matrix_root_device_uid", "661")
                 .addFormDataPart("executor", "3824")
-                .addFormDataPart("work_date", "2026-05-25")
-                .addFormDataPart("arrival_time", "14:59")
-                .addFormDataPart("begin_time", "14:59")
-                .addFormDataPart("end_time", "14:59")
-                .addFormDataPart("task_uid", "")
-                .addFormDataPart("close_mode", "no_onsite");
+                .addFormDataPart("work_date", workDate)
+                .addFormDataPart("arrival_time", arrivalTime)
+                .addFormDataPart("begin_time", arrivalTime)
+                .addFormDataPart("end_time", endTime)
+                .addFormDataPart("task_uid", "83")           // ← ID задачи (83-SLM, 88-осмотр перед абонементом, 121- подготовка к демонтажу )
+                .addFormDataPart("status_uid", statusUid)       // ← ID статуса (518- решено на месте, 639 - по тел, )
+                .addFormDataPart("close_mode", closeMode)
+                .addFormDataPart("params[731]", workDescription);
 
         // matrix_ctx_device поля (все возможные узлы)
         addMatrixContextFields(builder);
 
         // ✅ Добавляем НЕСКОЛЬКО фото (одинаковое имя поля "visit_files[]")
         if (photos != null && !photos.isEmpty()) {
-            for (File photo : photos) {
-                if (photo.exists()) {
+            for (Path photo : photos) {
+                if (photo.toFile().exists()) {
                     RequestBody fileBody = RequestBody.create(
-                            photo,
+                            photo.toFile(),
                             MediaType.parse("image/jpeg")
                     );
-                    builder.addFormDataPart("visit_files[]", photo.getName(), fileBody);
+                    builder.addFormDataPart("visit_files[]", photo.toFile().getName(), fileBody);
                 }
             }
         }
@@ -71,7 +88,7 @@ public class HendzCloseRequest {
         Request request = new Request.Builder()
                 .url(url)
                 .post(builder.build())
-                .addHeader("Cookie", COOKIE)
+                .addHeader("Cookie", cookie)
                 .addHeader("User-Agent", USER_AGENT)
                 .addHeader("X-October-Request-Handler", "onSendToModeration")
                 .addHeader("X-Requested-With", "XMLHttpRequest")
@@ -84,16 +101,16 @@ public class HendzCloseRequest {
             System.out.println("Status: " + response.code());
             System.out.println("Response: " + responseBody);
             return response.isSuccessful();
+        }catch (Exception e){
+            throw new RuntimeException(e);
         }
     }
 
-    private void addMatrixContextFields(MultipartBody.Builder builder) {
-        // Повторяющиеся поля (как в браузере)
+    private static void addMatrixContextFields(MultipartBody.Builder builder) {
+        // matrix_ctx_device поля (как в браузере)
         for (int i = 0; i < 3; i++) {
             builder.addFormDataPart("matrix_ctx_device[\\]", "661");
         }
-
-        // Контроллер и его узлы
         builder.addFormDataPart("matrix_ctx_device[\\1768\\1761]", "625");
         builder.addFormDataPart("analogue_pick[\\1768\\1761][3]", "");
         builder.addFormDataPart("analogue_get[\\1768\\1761][3]", "");
@@ -101,7 +118,6 @@ public class HendzCloseRequest {
         builder.addFormDataPart("matrix_ctx_device[\\1768\\1761\\2004]", "572");
         builder.addFormDataPart("matrix_ctx_device[\\1768\\1761\\2004]", "572");
 
-        // Валидатор и его узлы
         for (int i = 0; i < 5; i++) {
             builder.addFormDataPart("matrix_ctx_device[\\1768\\1760]", "658");
         }
@@ -113,7 +129,6 @@ public class HendzCloseRequest {
         builder.addFormDataPart("matrix_ctx_device[\\1768\\1760\\2038]", "610");
         builder.addFormDataPart("matrix_ctx_device[\\1768\\1760\\2005]", "707");
 
-        // Платформа валидатора
         for (int i = 0; i < 3; i++) {
             builder.addFormDataPart("matrix_ctx_device[\\1768\\1771]", "664");
         }
@@ -131,7 +146,6 @@ public class HendzCloseRequest {
         builder.addFormDataPart("matrix_ctx_device[\\1768\\1771\\1927\\2000\\1855]", "201");
         builder.addFormDataPart("matrix_ctx_device[\\1768\\1771\\1927\\2000\\1856]", "201");
 
-        // Дополнительные узлы сервисной зоны
         for (int i = 0; i < 3; i++) {
             builder.addFormDataPart("matrix_ctx_device[\\1768\\2041]", "768");
         }
@@ -139,7 +153,6 @@ public class HendzCloseRequest {
             builder.addFormDataPart("matrix_ctx_device[\\1768\\1784]", "90");
         }
 
-        // Блок дисплея
         builder.addFormDataPart("matrix_ctx_device[\\1768\\1785]", "673");
         builder.addFormDataPart("analogue_pick[\\1768\\1785][3]", "");
         builder.addFormDataPart("analogue_get[\\1768\\1785][3]", "");
@@ -147,7 +160,6 @@ public class HendzCloseRequest {
             builder.addFormDataPart("matrix_ctx_device[\\1768\\1785]", "673");
         }
 
-        // Замки
         for (int i = 0; i < 3; i++) {
             builder.addFormDataPart("matrix_ctx_device[\\1768\\1783]", "672");
         }
@@ -158,7 +170,6 @@ public class HendzCloseRequest {
         builder.addFormDataPart("matrix_ctx_device[\\1768\\1781]", "670");
         builder.addFormDataPart("matrix_ctx_device[\\1768\\1808]", "679");
 
-        // УЗО и ИБП
         for (int i = 0; i < 2; i++) {
             builder.addFormDataPart("matrix_ctx_device[\\1768\\1780]", "669");
         }
@@ -169,7 +180,6 @@ public class HendzCloseRequest {
             builder.addFormDataPart("matrix_ctx_device[\\1768\\1763]", "381");
         }
 
-        // Блок питания
         for (int i = 0; i < 3; i++) {
             builder.addFormDataPart("matrix_ctx_device[\\1768\\1762]", "428");
         }
@@ -217,7 +227,7 @@ public class HendzCloseRequest {
         }
         builder.addFormDataPart("matrix_ctx_device[\\1769\\2006]", "755");
 
-        // Проводка (кабели)
+        // Проводка
         builder.addFormDataPart("matrix_ctx_device[\\1807\\1805\\1945]", "677");
         builder.addFormDataPart("matrix_ctx_device[\\1807\\1805\\1806]", "677");
         builder.addFormDataPart("matrix_ctx_device[\\1807\\1805\\1803]", "677");
@@ -254,11 +264,9 @@ public class HendzCloseRequest {
         builder.addFormDataPart("matrix_ctx_device[\\1807\\2024\\2020]", "757");
         builder.addFormDataPart("matrix_ctx_device[\\1807\\2024\\2023]", "760");
 
-        // Корпус
         builder.addFormDataPart("matrix_ctx_device[\\1788\\1786]", "674");
         builder.addFormDataPart("matrix_ctx_device[\\1788\\1787]", "674");
 
-        // Кабели питания
         builder.addFormDataPart("matrix_ctx_device[\\2040]", "767");
         builder.addFormDataPart("matrix_ctx_device[\\2039]", "676");
     }

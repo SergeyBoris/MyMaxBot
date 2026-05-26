@@ -169,10 +169,6 @@ public class Pbf implements Contragent {
         return name;
     }
 
-    @Override
-    public boolean closeReq(Req req) {
-        return true;
-    }
 
     @Override
     public void addReqToCash(Req req) {

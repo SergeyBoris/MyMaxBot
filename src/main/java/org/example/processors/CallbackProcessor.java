@@ -12,6 +12,7 @@ import org.example.services.RequestService;
 import org.example.services.SaveFileService;
 import org.example.util.UserUploadSession;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -105,16 +106,16 @@ public class CallbackProcessor {
                         List<String> photoUrls = userUploadSession.getPhotoUrls();
                         String requestNumber = userUploadSession.getRequestNumber();
                         if (photoUrls != null) {
-                            SaveFileService.saveFile(update.getCallBack().getUser(), requestNumber, text, photoUrls, status);
-                            db.removeRequest(requestNumber);
+                            userUploadSession.setSavedJpgPaths(SaveFileService.saveFile(update.getCallBack().getUser(), requestNumber, text, photoUrls, status));
                         }
-                        usersSessions.remove(userId);
-                        boolean successClosed = requestService.closeRequest(contragent, requestNumber, photoUrls);
+                        boolean successClosed = requestService.closeRequest(userUploadSession);
                         if (successClosed) {
                             messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "Заявка закрыта", Const.KEYBOARD_ALL_REQ);
+                            db.removeRequest(requestNumber);
                         } else {
                             messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "Ошибка закрытия заявки", Const.KEYBOARD_ALL_REQ);
                         }
+                        usersSessions.remove(userId);
 
                     } else {
                         messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "МЕНЮ", Const.KEYBOARD_ALL_REQ);
