@@ -3,7 +3,9 @@ package org.example.processors;
 import org.example.constants.Const;
 import org.example.db.MapDB;
 import org.example.entity.Attachment;
+import org.example.entity.Contragents.Contragent;
 import org.example.entity.Contragents.Pfi;
+import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
 import org.example.entity.Update;
 import org.example.services.ContragentFactory;
@@ -82,16 +84,25 @@ public class CallbackProcessor {
 
                     if (payload.equals("close_request")) {
                         usersSessions.get(userId).setStatus("Закрыто");
+                        requestService.specialContragentAction(contragent, "Закрыто", usersSessions.get(userId));
 //                    String text = "Статус: Закрыто\n";
 //                    UserSessionUtil.addText(userId,text);
 
                     } else {
                         usersSessions.get(userId).setStatus("Локализовано");
+                        requestService.specialContragentAction(contragent, "Локализовано", usersSessions.get(userId));
 //                    String text = "Статус: Локализовано\n";
 //                    UserSessionUtil.addText(userId,text);
 
                     }
-                    messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "приложите фото и нажмите \"готово\"", Const.KEYBOARD_END_PHOTO);
+
+                    String nextMessageToUser = usersSessions.get(userId).getNextMessageToUser();
+                    InlineKeyboard nextKeyBoard = usersSessions.get(userId).getNextKeyBoard();
+                    if (nextMessageToUser != null && !nextMessageToUser.isEmpty() && nextKeyBoard != null) {
+                        messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), nextMessageToUser, nextKeyBoard);
+                    } else {
+                        messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), nextMessageToUser, nextKeyBoard);
+                    }
                 }
                 case "end_photo" -> {
                     if (usersSessions != null && usersSessions.containsKey(update.getCallBack().getUser().getUserId())) {
@@ -138,44 +149,55 @@ public class CallbackProcessor {
                 }
                 case "all_requests_pfi" -> {
                     List<Req> pfi = requestService.getAllRequests("PFI");
-                    for (Req req : pfi) {
-                        messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
+                    if (pfi != null && !pfi.isEmpty()) {
+                        for (Req req : pfi) {
+                            messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
+                        }
+                    } else {
+                        messageService.sendSimpleMessage(senderChatId, "нет заявок", Const.KEYBOARD_ALL_REQ);
+
                     }
-
                 }
-                default -> System.out.println("какимто чудом узерсессия нулевая");
+
+                    default -> System.out.println("какимто чудом узерсессия нулевая");
+                }
+
+
             }
 
 
         }
 
+        public void photoProcess (Update update){
 
-    }
+            long userId = update.getMessage().getSender().getUserId();
+            long chatId = update.getMessage().getRecipient().getChatId();
+            System.out.println("Сессия содержитт ключ " + userId + usersSessions.containsKey(update.getMessage().getSender().getUserId()));
+            if (usersSessions.containsKey(userId)) {
 
-    public void photoProcess(Update update) {
+                List<Attachment> attachments = update.getMessage().getBody().getAttachments();
+                if (update.getMessage().getLink() != null) {
+                    attachments = update.getMessage().getLink().getOriginalMessage().getAttachments();
+                }
 
-        long userId = update.getMessage().getSender().getUserId();
-        long chatId = update.getMessage().getRecipient().getChatId();
-        System.out.println("Сессия содержитт ключ " + userId + usersSessions.containsKey(update.getMessage().getSender().getUserId()));
-        if (usersSessions.containsKey(userId)) {
-            for (Attachment attachment : update.getMessage().getBody().getAttachments()) {
-                String photoUrl = attachment.getPayload().getUrl();
-                usersSessions.get(userId).setPhotoUrls(photoUrl);
+                for (Attachment attachment : attachments) {
+                    String photoUrl = attachment.getPayload().getUrl();
+                    usersSessions.get(userId).setPhotoUrls(photoUrl);
+                }
+                int countPhotoInSession = usersSessions.get(userId).getPhotoUrls().size();
+                messageService.sendSimpleMessage(chatId, "Приложено " + countPhotoInSession + " фото \n для отправки нажмите \"готово\"", Const.KEYBOARD_END_PHOTO);
+            } else {
+                messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "Выберете заявку сначала", null);
             }
-            int countPhotoInSession = usersSessions.get(userId).getPhotoUrls().size();
-            messageService.sendSimpleMessage(chatId, "Приложено " + countPhotoInSession + " фото \n для отправки нажмите \"готово\"", Const.KEYBOARD_END_PHOTO);
-        } else {
-            messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "Выберете заявку сначала", null);
         }
-    }
 
-    public void textProcess(Update update) {
-        long userId = update.getMessage().getSender().getUserId();
-        long chatId = update.getMessage().getRecipient().getChatId();
-        System.out.println("Сессия содержитт ключ " + userId + usersSessions.containsKey(update.getMessage().getSender().getUserId()));
-        if (usersSessions.containsKey(userId)) {
+        public void textProcess (Update update){
+            long userId = update.getMessage().getSender().getUserId();
+            long chatId = update.getMessage().getRecipient().getChatId();
+            System.out.println("Сессия содержитт ключ " + userId + usersSessions.containsKey(update.getMessage().getSender().getUserId()));
+            if (usersSessions.containsKey(userId)) {
 
+            }
         }
-    }
 
-}
+    }

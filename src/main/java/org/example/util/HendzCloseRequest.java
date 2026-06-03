@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class HendzCloseRequest {
@@ -40,15 +41,14 @@ public class HendzCloseRequest {
         String closeMode;
         String testWorkDescription = userUploadSession.getText();
         System.out.println("testWorkDescription = " + testWorkDescription);
-        String workDescription = "Замятия не обнаружено калибровка ок внесение ок";
+        String workDescription = userUploadSession.getText();;
         List<Path> photos = userUploadSession.getSavedJpgPaths();
-        if (userUploadSession.getStatus().equals("Закрыто")){
-             statusUid = "518";
-             closeMode = "onsite";
-        }else {
-            statusUid = "639";
-            closeMode = "no_onsite";
-        }
+        Map<String, Object> params = userUploadSession.params;
+//        if (userUploadSession.getStatus().equals("Закрыто")){
+//            params.put("params[731]",workDescription);
+//        }else {
+//          params.put("params[792]", workDescription);
+//        }
 
         String url = "https://work.hendz.ru:10294/pfi/close/" + outgoingId;
 
@@ -64,11 +64,11 @@ public class HendzCloseRequest {
                 .addFormDataPart("arrival_time", arrivalTime)
                 .addFormDataPart("begin_time", arrivalTime)
                 .addFormDataPart("end_time", endTime)
-                .addFormDataPart("task_uid", "83")           // ← ID задачи (83-SLM, 88-осмотр перед абонементом, 121- подготовка к демонтажу )
-                .addFormDataPart("status_uid", statusUid)       // ← ID статуса (518- решено на месте, 639 - по тел, )
-                .addFormDataPart("close_mode", closeMode)
-                .addFormDataPart("params[731]", workDescription);
+                .addFormDataPart("task_uid", "83");           // ← ID задачи (83-SLM, 88-осмотр перед абонементом, 121- подготовка к демонтажу )
 
+        params.forEach( (k,v) -> {
+            builder.addFormDataPart(k, v.toString());
+        });
         // matrix_ctx_device поля (все возможные узлы)
         addMatrixContextFields(builder);
 

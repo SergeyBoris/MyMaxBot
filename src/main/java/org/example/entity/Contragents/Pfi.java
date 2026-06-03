@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.Message;
 import org.example.constants.Const;
+import org.example.constants.ConstPfi;
 import org.example.db.MapDB;
 import org.example.entity.Req;
 import org.example.services.MessageService;
@@ -28,23 +29,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Pfi implements Contragent {
-    public static final String PAYLOAD = "min_hours=" +
-            "&max_hours=" +
-            "&number=" +
-            "&equipment_serial=" +
-            "&tid=" +
-            "&tl_from=" +
-            "&tl_to=" +
-            "&show_overdue=false" +
-            "&only_overdue=false" +
-            "&require_sv=false" +
-            "&require_pnr=false" +
-            "&require_other=false" +
-            "&require_reject=false" +
-            "&include_region_none=true" +
-            "&include_executor_none=true" +
-            "&executor_only_none=false" +
-            "&page=1";
+
     public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 YaBrowser/26.4.0.0 Safari/537.36";
     public static final String CONTENT_TYPE = "application/x-www-form-urlencoded; charset=UTF-8";
 
@@ -66,7 +51,10 @@ public class Pfi implements Contragent {
     @Override
     public List<Req> getAllRequests() {
 
-        return cashedRequests.values().stream().toList();
+        Collection<Req> values = cashedRequests.values();
+        if (values.isEmpty()) searchReqRest(HttpClient.newHttpClient(),new ObjectMapper());
+
+        return values.stream().toList();
     }
 
     @Override
@@ -94,11 +82,11 @@ public class Pfi implements Contragent {
                 .uri(URI.create("https://work.hendz.ru:10294/pfi"))
                 .header("Cookie", cookie)
                 .header("X-October-Request-Handler", "ticketsListServer::onLoadMoreTickets")
-                .header("user-agent", USER_AGENT)
+                .header("user-agent", ConstPfi.USER_AGENT)
                 .header("Content-Type", CONTENT_TYPE)
                 .header("X-Requested-With", "XMLHttpRequest")
                 .header("Referer", "https://work.hendz.ru:10294/pfi")
-                .POST(HttpRequest.BodyPublishers.ofString(PAYLOAD))
+                .POST(HttpRequest.BodyPublishers.ofString(ConstPfi.SHOW_REQ_PAYLOAD))
                 .build();
 
         try {
@@ -161,7 +149,7 @@ public class Pfi implements Contragent {
                     HttpRequest request = HttpRequest.newBuilder()
                             .uri(URI.create("https://work.hendz.ru:10294/pfi?show_overdue=0"))
                             .header("cookie", cookie)
-                            .header("user_agent", USER_AGENT)
+                            .header("user_agent", ConstPfi.USER_AGENT)
                             .header("Content-Type", CONTENT_TYPE)
                             .header("X-October-Request-Handler", "ticketsListServer::onLoadTicket")
                             .header("X-Requested-With", "XMLHttpRequest")
@@ -193,7 +181,39 @@ public class Pfi implements Contragent {
 
         return reqList;
     }
-    public Req parseTicketModal(String html,Req req) {
+
+    @Override
+    public void specialContragentAction(String action, UserUploadSession userUploadSession) {
+        switch (action){
+            case "Локализовано" -> {
+                    userUploadSession.setParams("params[791]", ConstPfi.NEW_PARAM_INSTANCE);
+                    userUploadSession.setNextMessageToUser("Напишите ФИО сотрудника ТСТ",Const.KEYBOARD_CANCEL); // следующее сообщение
+                    userUploadSession.setParams("status_uid", "639");
+                    userUploadSession.setParams("close_mode", "no_onsite");
+            }
+            case "Закрыто" ->{
+                userUploadSession.setParams("status_uid", "518");
+                userUploadSession.setParams("close_mode", "onsite");
+                userUploadSession.setNextMessageToUser("Текст заявки закрытие с выездом: ",Const.KEYBOARD_CANCEL);
+            }
+            case "Напишите ФИО сотрудника ТСТ" -> {
+                userUploadSession.setParams("params[791]", userUploadSession.getText()); // имя отправителя заявки
+                userUploadSession.setNextMessageToUser("Текст заявки для закрытия без выезда: ",Const.KEYBOARD_CANCEL); // следующее сообщение
+            }
+            case "Текст заявки для закрытия без выезда: " -> {
+                userUploadSession.setParams("params[792]", userUploadSession.getText()); // имя отправителя заявки
+                userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ",Const.KEYBOARD_END_PHOTO); // следующее сообщение
+            }
+            case "Текст заявки закрытие с выездом: " -> {
+                userUploadSession.setParams("params[731]", userUploadSession.getText()); // имя отправителя заявки
+                userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ",Const.KEYBOARD_END_PHOTO); // следующее сообщение
+            }
+
+        }
+
+    }
+
+    public Req parseTicketModal(String html, Req req) {
         Document doc = Jsoup.parse(html);
         // Берём таблицу
         Element table = doc.select("table.table").first();
@@ -240,6 +260,9 @@ public class Pfi implements Contragent {
                         req.setRequestText(req.getRequestText() +"Текст заявки: " + value);
                         }
                     break;
+                case "замечания к заявке":
+                        req.setRequestText(req.getRequestText() +"\nЗамечания к заявке: " + value);
+                    break;
             }
         }
         return req;
@@ -254,7 +277,7 @@ public class Pfi implements Contragent {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://work.hendz.ru:10294/account/login"))
                     .header("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7")
-                    .header("user-agent", USER_AGENT)
+                    .header("user-agent", ConstPfi.USER_AGENT)
 
                     .build();
 
@@ -269,15 +292,15 @@ public class Pfi implements Contragent {
             System.out.println(token);
             String formData = "_session_key=" + URLEncoder.encode(sessionKey, StandardCharsets.UTF_8) +
                     "&_token=" + URLEncoder.encode(token, StandardCharsets.UTF_8) +
-                    "&login=" + URLEncoder.encode(Const.PFI_LOGIN, StandardCharsets.UTF_8) +
-                    "&password=" + URLEncoder.encode(Const.PFI_PASSWORD, StandardCharsets.UTF_8) +
+                    "&login=" + URLEncoder.encode(ConstPfi.PFI_LOGIN, StandardCharsets.UTF_8) +
+                    "&password=" + URLEncoder.encode(ConstPfi.PFI_PASSWORD, StandardCharsets.UTF_8) +
                     "&remember=1";
 
             request = HttpRequest.newBuilder()
                     .header("Content-Type", CONTENT_TYPE)
                     .header("X-October-Request-Handler", "onSignin")
                     .header("X-Requested-With", "XMLHttpRequest")
-                    .header("User-Agent", USER_AGENT)
+                    .header("User-Agent", ConstPfi.USER_AGENT)
                     .uri(URI.create("https://work.hendz.ru:10294/account/login"))
                     .POST(HttpRequest.BodyPublishers.ofString(formData))
                     .build();

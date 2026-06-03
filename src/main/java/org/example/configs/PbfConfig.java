@@ -1,4 +1,4 @@
-package org.example.util;
+package org.example.configs;
 
 public class PbfConfig {
     public String url;

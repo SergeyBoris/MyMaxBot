@@ -3,8 +3,8 @@ package org.example.constants;
 import org.example.entity.Button;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.KeyBoard;
-import org.example.util.Config;
-import org.example.util.ConfigLoader;
+import org.example.configs.Config;
+import org.example.configs.ConfigLoader;
 
 import java.util.List;
 

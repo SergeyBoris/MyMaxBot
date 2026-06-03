@@ -41,4 +41,9 @@ public class RequestService {
 
         return contragent.closeReq(req, userUploadSession);  // извлекаем Req из Optional
     }
+
+    public void specialContragentAction(String contragentType, String action,UserUploadSession userUploadSession){
+        Contragent contragent = contragentFactory.getContragent(contragentType);
+        contragent.specialContragentAction(action,userUploadSession);
+    }
 }

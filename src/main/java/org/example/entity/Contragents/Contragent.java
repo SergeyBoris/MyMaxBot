@@ -17,6 +17,7 @@ public interface Contragent {
     void searchReqRest(HttpClient client, ObjectMapper mapper);
     void addReqToCash(Req req);
     void processNewEmail(Message message);
+    void specialContragentAction(String action, UserUploadSession userUploadSession);
     default boolean closeReq(Req req, UserUploadSession userUploadSession) {
         return true;
     }

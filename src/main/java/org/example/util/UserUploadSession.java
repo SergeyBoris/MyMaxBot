@@ -3,6 +3,8 @@ package org.example.util;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.example.entity.InlineKeyboard;
+import org.example.entity.KeyBoard;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -17,6 +19,8 @@ public class UserUploadSession {
     List<String> photoUrls = new ArrayList<>();
     List<Path> savedJpgPaths = new ArrayList<>();
     Map<String, Object> params = new HashMap<>();
+    String nextMessageToUser;
+    InlineKeyboard nextKeyBoard;
     String text;
     String status;
     boolean isChanged = false;
@@ -31,5 +35,14 @@ public class UserUploadSession {
     }
     public void setPhotoUrls(String photoUrls) {
         this.photoUrls.add(photoUrls);
+    }
+
+    public void setParams(String key, Object value){
+        params.put(key, value);
+    }
+
+    public void setNextMessageToUser(String message, InlineKeyboard keyBoard){
+        this.nextMessageToUser = message;
+        this.nextKeyBoard = keyBoard;
     }
 }

@@ -1,9 +1,8 @@
-package org.example.util;
+package org.example.configs;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.example.Main;
 
 import java.io.File;
 import java.io.FileNotFoundException;

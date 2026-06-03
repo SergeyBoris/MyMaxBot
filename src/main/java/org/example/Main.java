@@ -6,8 +6,8 @@ import org.example.db.MapDB;
 import org.example.entity.Update;
 import org.example.processors.*;
 import org.example.services.*;
-import org.example.util.Config;
-import org.example.util.ConfigLoader;
+import org.example.configs.Config;
+import org.example.configs.ConfigLoader;
 import org.example.util.UserUploadSession;
 
 import javax.imageio.ImageIO;
@@ -40,7 +40,7 @@ public class Main {
         ContragentFactory contragentFactory = new ContragentFactory(messageService,db,emailMonitor);
         RequestService requestService = new RequestService(contragentFactory,client,mapper);
         CallbackProcessor callbackProcessor = new CallbackProcessor(messageService, db, usersSessions,requestService);
-        UpdateProcessor updateProcessor = new UpdateProcessor(messageService, callbackProcessor, usersSessions, db);
+        UpdateProcessor updateProcessor = new UpdateProcessor(messageService, callbackProcessor, usersSessions, db, requestService);
         FileMonitoringProcessor fileMonitoringProcessor = new FileMonitoringProcessor(db, mapper, updateProcessor);
 
         FindReqProcessor findReqProcessor = new FindReqProcessor(contragentFactory,client,mapper);

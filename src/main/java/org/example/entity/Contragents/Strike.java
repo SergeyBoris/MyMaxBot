@@ -8,6 +8,7 @@ import org.example.db.MapDB;
 import org.example.entity.Req;
 import org.example.services.EmailMonitorService;
 import org.example.services.MessageService;
+import org.example.util.UserUploadSession;
 
 import java.net.http.HttpClient;
 import java.util.List;
@@ -23,6 +24,10 @@ public class Strike implements Contragent {
     private final MapDB db;
     private EmailMonitorService emailMonitorService;
 
+    @Override
+    public void specialContragentAction(String action, UserUploadSession userUploadSession) {
+
+    }
 
     private final String name;
 

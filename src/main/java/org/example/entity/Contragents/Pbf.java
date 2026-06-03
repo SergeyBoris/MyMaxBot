@@ -7,6 +7,7 @@ import jakarta.mail.Message;
 import okhttp3.*;
 import org.example.constants.Const;
 import org.example.constants.ConstPbf;
+import org.example.constants.ConstPfi;
 import org.example.db.MapDB;
 import org.example.entity.Req;
 import org.example.services.MessageService;
@@ -34,7 +35,7 @@ public class Pbf implements Contragent {
     private final String name;
     private final OkHttpClient client = new OkHttpClient();
 
-    public Pbf(MessageService messageService, MapDB db,String name) {
+    public Pbf(MessageService messageService, MapDB db, String name) {
         this.db = db;
         this.messageService = messageService;
         cashedRequests = new ConcurrentHashMap<>();
@@ -49,33 +50,42 @@ public class Pbf implements Contragent {
 
         MultipartBody.Builder builder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM);
+        if (!files.isEmpty()) {
+            for (Path filePath : files) {
+                File file = filePath.toFile();
+                RequestBody fileBody = RequestBody.create(
+                        file,
+                        okhttp3.MediaType.parse("application/octet-stream")
+                );
+                builder.addFormDataPart("file", file.getName(), fileBody);
+            }
 
-        for (Path filePath : files) {
-            File file = filePath.toFile();
-            RequestBody fileBody = RequestBody.create(
-                    file,
-                    okhttp3.MediaType.parse("application/octet-stream")
-            );
-            builder.addFormDataPart("file", file.getName(), fileBody);
+            Request request = new Request.Builder()
+                    .url(url)
+                    .post(builder.build())
+                    .addHeader("Authorization", ConstPbf.AUTHORISATION)
+                    .addHeader("X-Atlassian-Token", "no-check")
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                System.out.println("Status: " + response.code());
+                System.out.println("Response: " + response.body().string());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
-
-        Request request = new Request.Builder()
-                .url(url)
-                .post(builder.build())
-                .addHeader("Authorization", ConstPbf.AUTHORISATION)
-                .addHeader("X-Atlassian-Token", "no-check")
-                .build();
-
-        try (Response response = client.newCall(request).execute()) {
-            System.out.println("Status: " + response.code());
-            System.out.println("Response: " + response.body().string());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        if(userUploadSession.getText() !=null && !userUploadSession.getText().isEmpty()){
+        if (userUploadSession.getText() != null && !userUploadSession.getText().isEmpty() && !userUploadSession.getText().equals("null")) {
             addComment(reqNumber, userUploadSession.getText());
         }
         return true;
+    }
+
+    @Override
+    public void specialContragentAction(String action, UserUploadSession userUploadSession) {
+
+        userUploadSession.setNextMessageToUser("Приложите фото или текст нажмите готово", Const.KEYBOARD_END_PHOTO); // следующее сообщение
+
+
     }
 
     @Override
@@ -235,9 +245,12 @@ public class Pbf implements Contragent {
                 this.maxResults = maxResults;
             }
         }
-
-        SearchRequest searchRequest = new SearchRequest(
-                "status != \"Ожидание ответа от Клиента\" AND statusCategory != Done ORDER BY created DESC",
+        String jql = "project in (\"Альфа POS\", \"АТМ Альянс. Сервис\", INTEL, Левобережный, \"Общий проект\") " +
+                "AND Инженер = currentUser() " +
+                "AND issuetype in (\"Запрос на обслуживание\", \"Service Request\", \"False Request\") " +
+                "AND status in (10314, 10109, 10802) " +
+                "ORDER BY created DESC";
+        SearchRequest searchRequest = new SearchRequest(jql,
                 List.of(
                         "summary", "description", "status", "assignee", "created",
                         "priority", "customfield_10510", "customfield_10610",
@@ -249,7 +262,7 @@ public class Pbf implements Contragent {
         return mapper.writeValueAsString(searchRequest);
     }
 
-    private void addComment(String reqNumber, String comment){
+    private void addComment(String reqNumber, String comment) {
         String url = "https://service.unitodi.ru/rest/api/2/issue/" + reqNumber + "/comment";
 
         // Формируем JSON с комментарием

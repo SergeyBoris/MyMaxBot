@@ -12,7 +12,7 @@ public class UserSessionUtil {
             }
 
             // Получаем текущий текст (если null — заменяем на пустую строку)
-            String currentText = (session.getText() != null) ? session.getText() : "";
+            String currentText = (session.getText() != null && !session.getText().equals("null")) ? session.getText() : "";
             String newText = "";
             // Объединяем с новым текстом
             if (currentText.isEmpty()) {

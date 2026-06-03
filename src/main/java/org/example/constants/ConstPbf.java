@@ -1,7 +1,7 @@
 package org.example.constants;
 
-import org.example.util.ConfigLoader;
-import org.example.util.PbfConfig;
+import org.example.configs.ConfigLoader;
+import org.example.configs.PbfConfig;
 
 
 

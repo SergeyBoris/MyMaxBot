@@ -9,6 +9,7 @@ import org.example.db.MapDB;
 import org.example.entity.Req;
 import org.example.services.EmailMonitorService;
 import org.example.services.MessageService;
+import org.example.util.UserUploadSession;
 
 import java.net.http.HttpClient;
 import java.util.List;
@@ -43,6 +44,10 @@ public class Hendz implements Contragent {
         return name;
     }
 
+    @Override
+    public void specialContragentAction(String action, UserUploadSession userUploadSession) {
+
+    }
 
     @Override
     public void searchReqRest(HttpClient client, ObjectMapper mapper) {
