@@ -63,8 +63,8 @@ public class HendzCloseRequest {
                 .addFormDataPart("work_date", workDate)
                 .addFormDataPart("arrival_time", arrivalTime)
                 .addFormDataPart("begin_time", arrivalTime)
-                .addFormDataPart("end_time", endTime)
-                .addFormDataPart("task_uid", "83");           // ← ID задачи (83-SLM, 88-осмотр перед абонементом, 121- подготовка к демонтажу )
+                .addFormDataPart("end_time", endTime);
+          //      .addFormDataPart("task_uid", "83");           // ← ID задачи (83-SLM, 88-осмотр перед абонементом, 121- подготовка к демонтажу )
 
         params.forEach( (k,v) -> {
             builder.addFormDataPart(k, v.toString());

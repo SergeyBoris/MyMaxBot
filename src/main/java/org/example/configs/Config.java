@@ -30,7 +30,5 @@ public class Config {
     public String mailFolderToScan;
     public String mailUserName;
     public String mailPassword;
-    public String pfiLogin;
-    public String pfiPassword;
 
 }

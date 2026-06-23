@@ -39,7 +39,7 @@ public class CallbackProcessor {
 
         if (update.getCallBack() != null) {
             String payload = update.getCallBack().getPayload();
-
+            long userId = update.getCallBack().getUser().getUserId();
             switch (payload) {
                 case "all_requests_alfa" -> {
                     List<Req> allReq = requestService.getAllRequests("PBF");
@@ -48,33 +48,11 @@ public class CallbackProcessor {
                             messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
                         }
 
-//                Map<String, Req> allRequests = db.getAllRequests();
-//
-//                if (!allRequests.isEmpty()) {
-//                    for (Map.Entry<String, Req> entry : allRequests.entrySet()) {
-//                        if (entry.getValue().getToUsersId() != null && !entry.getValue().getToUsersId().isEmpty()) {
-//                            for (Long toUsersId : entry.getValue().getToUsersId()) {
-//                                if (senderUserId == toUsersId) {
-//                                    String text = entry.getKey() + "\n" +
-//                                            entry.getValue().getRequestAddress() + "\n" +
-//                                            entry.getValue().getRequestText();
-//                                    messageService.sendSimpleMessage(senderChatId, text, Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
-//                                }
-//                            }
-//                        }else {
-//                            String text = entry.getKey() + "\n" +
-//                                    entry.getValue().getRequestAddress() + "\n" +
-//                                    entry.getValue().getRequestText();
-//                            messageService.sendSimpleMessage(senderChatId, text, Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
-//                        }
-//
-//                    }
                     } else
                         messageService.sendSimpleMessage(senderChatId, "нет заявок", Const.KEYBOARD_ALL_REQ);
 
                 }
                 case "close_request", "localized" -> {
-                    long userId = update.getCallBack().getUser().getUserId();
                     String[] split = update.getMessage().getBody().getText().split("\n");
                     String reqNumber = split[0];
                     String contragent = split[1];
@@ -96,18 +74,12 @@ public class CallbackProcessor {
 
                     }
 
-                    String nextMessageToUser = usersSessions.get(userId).getNextMessageToUser();
-                    InlineKeyboard nextKeyBoard = usersSessions.get(userId).getNextKeyBoard();
-                    if (nextMessageToUser != null && !nextMessageToUser.isEmpty() && nextKeyBoard != null) {
-                        messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), nextMessageToUser, nextKeyBoard);
-                    } else {
-                        messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), nextMessageToUser, nextKeyBoard);
-                    }
+                    extractNextMessageToUser(update, userId);
                 }
+
                 case "end_photo" -> {
                     if (usersSessions != null && usersSessions.containsKey(update.getCallBack().getUser().getUserId())) {
 
-                        long userId = update.getCallBack().getUser().getUserId();
                         UserUploadSession userUploadSession = usersSessions.get(userId);
                         String text = usersSessions.get(userId).getText();
                         String status = usersSessions.get(userId).getStatus();
@@ -151,12 +123,24 @@ public class CallbackProcessor {
                     List<Req> pfi = requestService.getAllRequests("PFI");
                     if (pfi != null && !pfi.isEmpty()) {
                         for (Req req : pfi) {
-                            messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
+                            messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PFI);
                         }
                     } else {
                         messageService.sendSimpleMessage(senderChatId, "нет заявок", Const.KEYBOARD_ALL_REQ);
 
                     }
+                }
+                case "p_n_r" -> {
+                    String[] split = update.getMessage().getBody().getText().split("\n");
+                    String reqNumber = split[0];
+                    String contragent = split[1];
+                    usersSessions.put(userId, new UserUploadSession(reqNumber, contragent));
+                    messageService.sendSimpleMessage(senderChatId,"Выберите статус заявки",Const.KEYBOARD_ATTACHMENT_TO_PFI_PNR); // следующее сообщение
+                }
+                case "p_n_r_worked" -> {
+                    requestService.specialContragentAction("PFI", "p_n_r_worked", usersSessions.get(userId));
+
+                    extractNextMessageToUser(update, userId);
                 }
 
                     default -> System.out.println("какимто чудом узерсессия нулевая");
@@ -168,7 +152,17 @@ public class CallbackProcessor {
 
         }
 
-        public void photoProcess (Update update){
+    private void extractNextMessageToUser(Update update, long userId) {
+        String nextMessageToUser = usersSessions.get(userId).getNextMessageToUser();
+        InlineKeyboard nextKeyBoard = usersSessions.get(userId).getNextKeyBoard();
+        if (nextMessageToUser != null && !nextMessageToUser.isEmpty() && nextKeyBoard != null) {
+            messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), nextMessageToUser, nextKeyBoard);
+        } else {
+            messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), nextMessageToUser, nextKeyBoard); // todo разобраться почему тожесамое
+        }
+    }
+
+    public void photoProcess (Update update){
 
             long userId = update.getMessage().getSender().getUserId();
             long chatId = update.getMessage().getRecipient().getChatId();

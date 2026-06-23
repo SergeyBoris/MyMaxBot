@@ -50,11 +50,10 @@ public class Pfi implements Contragent {
     }
     @Override
     public List<Req> getAllRequests() {
-
-        Collection<Req> values = cashedRequests.values();
-        if (values.isEmpty()) searchReqRest(HttpClient.newHttpClient(),new ObjectMapper());
-
-        return values.stream().toList();
+        if (cashedRequests.isEmpty()){
+            searchReqRest(HttpClient.newHttpClient(),new ObjectMapper()); // todo убрать
+        }
+        return cashedRequests.values().stream().toList();
     }
 
     @Override
@@ -186,27 +185,46 @@ public class Pfi implements Contragent {
     public void specialContragentAction(String action, UserUploadSession userUploadSession) {
         switch (action){
             case "Локализовано" -> {
-                    userUploadSession.setParams("params[791]", ConstPfi.NEW_PARAM_INSTANCE);
                     userUploadSession.setNextMessageToUser("Напишите ФИО сотрудника ТСТ",Const.KEYBOARD_CANCEL); // следующее сообщение
+                    userUploadSession.setParams("task_uid","83");
                     userUploadSession.setParams("status_uid", "639");
                     userUploadSession.setParams("close_mode", "no_onsite");
             }
             case "Закрыто" ->{
+                userUploadSession.setParams("task_uid","83");
                 userUploadSession.setParams("status_uid", "518");
                 userUploadSession.setParams("close_mode", "onsite");
-                userUploadSession.setNextMessageToUser("Текст заявки закрытие с выездом: ",Const.KEYBOARD_CANCEL);
+                userUploadSession.setNextMessageToUser("Введите текст заявки закрытие с выездом: ",Const.KEYBOARD_CANCEL);
             }
             case "Напишите ФИО сотрудника ТСТ" -> {
                 userUploadSession.setParams("params[791]", userUploadSession.getText()); // имя отправителя заявки
-                userUploadSession.setNextMessageToUser("Текст заявки для закрытия без выезда: ",Const.KEYBOARD_CANCEL); // следующее сообщение
+                userUploadSession.setNextMessageToUser("Введите текст заявки для закрытия без выезда: ",Const.KEYBOARD_CANCEL); // следующее сообщение
             }
-            case "Текст заявки для закрытия без выезда: " -> {
+            case "Введите текст заявки для закрытия без выезда: " -> {
                 userUploadSession.setParams("params[792]", userUploadSession.getText()); // имя отправителя заявки
                 userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ",Const.KEYBOARD_END_PHOTO); // следующее сообщение
             }
-            case "Текст заявки закрытие с выездом: " -> {
+            case "Введите текст заявки закрытие с выездом: " -> {
                 userUploadSession.setParams("params[731]", userUploadSession.getText()); // имя отправителя заявки
                 userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ",Const.KEYBOARD_END_PHOTO); // следующее сообщение
+            }
+            case "p_n_r_worked" -> {
+                userUploadSession.setParams("task_uid","88");
+                userUploadSession.setParams("status_uid", "531");       // статус - ПНР
+                userUploadSession.setParams("params[920]","ПНР успех"); // описание работ
+                userUploadSession.setNextMessageToUser("Введите серийный номер терминала текстом:",Const.KEYBOARD_CANCEL);
+            }
+            case "Введите серийный номер терминала текстом:" ->{
+                userUploadSession.setParams("params[920]","ПНР успех"); // описание работ
+                userUploadSession.setParams("close_mode", "onsite");
+                userUploadSession.setParams("params[592]", userUploadSession.getText());
+                userUploadSession.setText("");
+                userUploadSession.setNextMessageToUser("Введите контактные данные представителя ТСТ:",Const.KEYBOARD_CANCEL);
+
+            }
+            case "Введите контактные данные представителя ТСТ:" -> {
+                userUploadSession.setParams("params[894]", userUploadSession.getText()); // имя отправителя заявки
+                userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ",Const.KEYBOARD_END_PHOTO);
             }
 
         }

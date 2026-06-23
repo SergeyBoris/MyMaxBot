@@ -31,16 +31,20 @@ public class Const {
     public static String MAIL_FOLDER_TO_SCAN;
     public static String MAIL_USER_NAME;
     public static String MAIL_PASSWORD;
-    public static String PFI_LOGIN;
-    public static String PFI_PASSWORD;
     public static final Button BTN_ALL_REQ_ALFA = new Button("callback","Альфа","all_requests_alfa");
     public static final Button BTN_ALL_REQ_HENDZ = new Button("callback","Хендз","all_requests_hendz");
     public static final Button BTN_ALL_REQ_PFI = new Button("callback","ПФИ","all_requests_pfi");
     public static final Button BTN_CLOSE_REQ = new Button("callback","Закрыть заявку","close_request");
     public static final Button BTN_LOCALIZED = new Button("callback", "Локализовано", "localized");
+    public static final Button BTN_PNR = new Button("callback", "ПНР", "p_n_r");
+    public static final Button BTN_PNR_WORKED = new Button("callback", "успех", "p_n_r_worked");
+    public static final Button BTN_PNR_NEED_ANOTHER_DRIVE = new Button("callback", "Нужен повторный выезд", "p_n_r_need_another_drive");
+    public static final Button BTN_PNR_NOT_ALLOWED = new Button("callback", "не допущен", "p_n_r_not_allowed");
     public static final Button BTN_SEND_ALL_ATTACHMENTS = new Button("callback","готово","end_photo");
     public static final Button BTN_CANCEL = new Button("callback" , "Отмена", "cancel_work_with_req");
     public static final InlineKeyboard KEYBOARD_ALL_REQ = new InlineKeyboard("inline_keyboard", new KeyBoard(List.of(BTN_ALL_REQ_ALFA,BTN_ALL_REQ_HENDZ,BTN_ALL_REQ_PFI)));
+    public static final InlineKeyboard KEYBOARD_ATTACHMENT_TO_ALL_REQ_PFI = new InlineKeyboard("inline_keyboard", new KeyBoard(List.of(BTN_CLOSE_REQ,BTN_LOCALIZED,BTN_PNR)));
+    public static final InlineKeyboard KEYBOARD_ATTACHMENT_TO_PFI_PNR = new InlineKeyboard("inline_keyboard", new KeyBoard(List.of(BTN_PNR_WORKED,BTN_PNR_NEED_ANOTHER_DRIVE,BTN_PNR_NOT_ALLOWED)));
     public static final InlineKeyboard KEYBOARD_ATTACHMENT_TO_ALL_REQ = new InlineKeyboard("inline_keyboard", new KeyBoard(List.of(BTN_CLOSE_REQ,BTN_LOCALIZED)));
     public static final InlineKeyboard KEYBOARD_END_PHOTO = new InlineKeyboard("inline_keyboard", new KeyBoard(List.of(BTN_SEND_ALL_ATTACHMENTS,BTN_CANCEL)));
     public static final InlineKeyboard KEYBOARD_CANCEL = new InlineKeyboard("inline_keyboard", new KeyBoard(List.of(BTN_CANCEL)));
@@ -69,8 +73,7 @@ public class Const {
             MAIL_FOLDER_TO_SCAN = config.getMailFolderToScan();
             MAIL_USER_NAME = config.getMailUserName();
             MAIL_PASSWORD = config.getMailPassword();
-            PFI_LOGIN = config.getPfiLogin();
-            PFI_PASSWORD = config.getPfiPassword();
+
 
 
         } catch (Exception e) {
