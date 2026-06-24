@@ -16,7 +16,7 @@ public class MessageService {
     private HttpClient client;
 
     public void sendSimpleMessage(long chatId, String messageText, InlineKeyboard keyBoard) {
-        String kbd="";
+        String kbd = "";
         // Замена буквальных последовательностей \\r\\n на <br>
         messageText = messageText.replaceAll("\\\\\\\\r\\\\\\\\n", "\\\\n");
         messageText = messageText.replaceAll("\\n", "\\\\n");
@@ -24,13 +24,19 @@ public class MessageService {
 
         // Очистка от множественных <br> (2+ подряд → один <br>)
         messageText = messageText.replaceAll("(\\\\n){2,}", "\\\\n");
-        System.out.println("После замены: " + messageText);
+
 //        System.out.println("messgeytext : "+messageText);
         messageText = messageText
 //             .replace("\\", "\\\\")
-          .replace("\"", "\\\"")
-         .replace("\n", "\\\\n");
-        if(messageText.length()>4000){
+                .replace("\"", "'")
+                .replace("\n", "\\\\n")
+                .replace("\r","")
+                .trim();
+
+        System.out.println("После замены: \n" + messageText);
+
+        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        if (messageText.length() > 4000) {
             messageText = messageText.substring(0, 3999);
         }
         ObjectMapper mapper = new ObjectMapper();
@@ -49,14 +55,14 @@ public class MessageService {
                     %s
                   ]
                 }
-                """.formatted(messageText,kbd);
-        if(keyBoard==null){
+                """.formatted(messageText, kbd);
+        if (keyBoard == null) {
             json = """
-                {
-                  "text": "%s",
-                  "format": "html"
-                }
-                """.formatted(messageText);
+                    {
+                      "text": "%s",
+                      "format": "html"
+                    }
+                    """.formatted(messageText);
         }
         System.out.println(json);
         HttpRequest request = getHttpRequest("https://platform-api.max.ru/messages?chat_id=", chatId, json);
@@ -64,11 +70,12 @@ public class MessageService {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             System.out.println("Status: " + response.statusCode());
             System.out.println("Response: " + response.body());
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
     }
+
     public void deleteMessage(String messageId) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://platform-api.max.ru/messages?message_id=" + messageId))
@@ -80,7 +87,7 @@ public class MessageService {
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             System.out.println("Status: " + response.statusCode());
             System.out.println("Response: " + response.body());
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 

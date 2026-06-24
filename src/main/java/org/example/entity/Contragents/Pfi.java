@@ -50,9 +50,9 @@ public class Pfi implements Contragent {
     }
     @Override
     public List<Req> getAllRequests() {
-        if (cashedRequests.isEmpty()){
-            searchReqRest(HttpClient.newHttpClient(),new ObjectMapper()); // todo убрать
-        }
+//        if (cashedRequests.isEmpty()){
+//            searchReqRest(HttpClient.newHttpClient(),new ObjectMapper()); // todo убрать
+//        }
         return cashedRequests.values().stream().toList();
     }
 
