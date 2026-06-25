@@ -50,6 +50,8 @@ public class Main {
 
         Thread monitoringThread = new Thread(findReqProcessor);
         Thread emailThread = new Thread(emailMonitoringProcessor);
+        // Создаём планировщик
+        EmailMonitoringScheduler scheduler = new EmailMonitoringScheduler(emailMonitoringProcessor);
 
         monitoringThread.start();
         emailThread.start();

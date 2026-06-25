@@ -185,5 +185,8 @@ public class EmailMonitorService {
         }
         return fullText;
     }
+    public boolean isConnected() {
+        return store != null && store.isConnected();
+    }
 
 }

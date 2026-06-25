@@ -244,12 +244,12 @@ public class Pbf implements Contragent {
                 this.maxResults = maxResults;
             }
         }
-//        String jql = "project in (\"Альфа POS\", \"АТМ Альянс. Сервис\", INTEL, Левобережный, \"Общий проект\") " +
-//                "AND issuetype in (\"Запрос на обслуживание\", \"Service Request\", \"False Request\") " +
-//                "AND status in (10314, 10109, 10802) " +
-//                "ORDER BY created DESC";
+        String jql = "project in (\"Альфа POS\", \"АТМ Альянс. Сервис\", INTEL, Левобережный, \"Общий проект\") " +
+                "AND issuetype in (\"Запрос на обслуживание\", \"Service Request\", \"False Request\") " +
+                "AND status in (10314, 10109, 10802) " +
+                "ORDER BY created DESC";
+//        String jql = "project = \"Альфа POS\" AND key = APOS-621906";
 
-        String jql = "project = \"Альфа POS\" AND key = APOS-621906";
 
         SearchRequest searchRequest = new SearchRequest(jql,
                 List.of(
