@@ -53,6 +53,12 @@ public class Req {
             sb.append("\n").append(fieldName).append(": ").append(value);
         }
     }
+
+    public void setRequestText(String requestText) {
+        requestText = requestText.replaceAll("\\\\(?![nrtbf\\\\\"/])", "/");
+        this.requestText = requestText;
+    }
+
     @Override
     public String toString() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");

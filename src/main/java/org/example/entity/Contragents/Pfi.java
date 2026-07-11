@@ -121,7 +121,7 @@ public class Pfi implements Contragent {
     @Override
     public void addReqToCash(Req req) {
         for (Long user : db.getAllUsers()) {
-            messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
+            messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PFI);
         }
         cashedRequests.put(req.getRequestNumber(), req);
 
@@ -250,6 +250,7 @@ public class Pfi implements Contragent {
             switch (key) {
                 case "tid":
                     req.setTID(value);
+                    req.params.put("params[593]",value);
                     System.out.println("TID: " + value);
                     break;
                 case "рекомендации":
@@ -261,6 +262,7 @@ public class Pfi implements Contragent {
                     break;
                 case "серийный номер":
                     System.out.println("SN: " + value);
+                    req.params.put("params[591]",value);
                     break;
                 case "адрес":
                     System.out.println("Адрес: " + value);

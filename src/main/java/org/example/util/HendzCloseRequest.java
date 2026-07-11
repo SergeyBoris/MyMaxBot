@@ -68,6 +68,7 @@ public class HendzCloseRequest {
 
         params.forEach( (k,v) -> {
             builder.addFormDataPart(k, v.toString());
+
         });
         // matrix_ctx_device поля (все возможные узлы)
         addMatrixContextFields(builder);

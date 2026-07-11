@@ -1,8 +1,8 @@
 {
-  "lastMarker" : {
-    "lastMarker" : 5873
-  },
   "requests" : { },
+  "lastMarker" : {
+    "lastMarker" : 2147483647
+  },
   "users" : {
     "14863801" : 249013248
   }

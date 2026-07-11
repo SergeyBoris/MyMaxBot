@@ -2,12 +2,13 @@ package org.example.processors;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.example.entity.Contragents.Contragent;
 import org.example.services.ContragentFactory;
 
 import java.net.http.HttpClient;
 import java.util.Map;
-
+@Slf4j
 public class FindReqProcessor implements Runnable {
     private final ContragentFactory contragentFactory;
     private final HttpClient client;
@@ -33,6 +34,7 @@ public class FindReqProcessor implements Runnable {
 
                 v.searchReqRest(client,mapper);
             }catch (Exception e){
+                log.error("findReq error ",e);
                 e.printStackTrace();
             }
         });

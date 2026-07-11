@@ -1,5 +1,6 @@
 package org.example.constants;
 
+import lombok.extern.slf4j.Slf4j;
 import org.example.entity.Button;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.KeyBoard;
@@ -8,6 +9,7 @@ import org.example.configs.ConfigLoader;
 
 import java.util.List;
 
+@Slf4j
 public class Const {
 
     public static final long UPDATE_BOT_DELAY_TIME;
@@ -77,6 +79,7 @@ public class Const {
 
 
         } catch (Exception e) {
+            log.error("Ошибка при инициализации констант: ",e);
             throw new RuntimeException("Ошибка при инициализации констант: " + e.getMessage(), e);
         }
     }

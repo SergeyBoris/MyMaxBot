@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.Message;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.example.constants.Const;
 import org.example.constants.ConstPbf;
@@ -27,7 +28,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-
+@Slf4j
 public class Pbf implements Contragent {
     private final Map<String, Req> cashedRequests;
     private final MessageService messageService;
@@ -134,8 +135,11 @@ public class Pbf implements Contragent {
 
             //полный ответ
             System.out.println(responseText);
+            log.debug(responseText);
             root = mapper.readTree(responseText);
         } catch (Exception e) {
+
+            log.error("searchReqRest error ", e );
             throw new RuntimeException(e);
         }
 

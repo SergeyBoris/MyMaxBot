@@ -2,6 +2,7 @@ package org.example.db;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
 import org.example.entity.Req;
 
@@ -14,6 +15,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class MapDB {
 
     private final ObjectMapper mapper;
@@ -24,8 +26,16 @@ public class MapDB {
     private final ConcurrentHashMap<Long, Long> usersMap;
 
     public MapDB(ObjectMapper mapper) {
+        log.info("Creating new db...");
         this.mapper = mapper;
-        this.dbFile = new File(Const.DB_FILE_NAME);
+        // ✅ Проверка на null
+        String dbFileName = Const.DB_FILE_NAME;
+        log.info("DB_FILE_NAME is: {}", dbFileName);
+        if (dbFileName == null || dbFileName.isEmpty()) {
+            log.warn("DB_FILE_NAME is null or empty, using default: BD.json");
+            dbFileName = "BD.json";
+        }
+        this.dbFile = new File(dbFileName);
 
         // Потокобезопасные карты
         this.requestsMap = new ConcurrentHashMap<>();
@@ -36,8 +46,9 @@ public class MapDB {
     }
 
     private synchronized void loadDb() {
+
         if (!dbFile.exists()) {
-            System.out.println("Файл базы данных не найден. Создаём новый.");
+            log.info("Файл базы данных не найден. Создаём новый.");
             return;
         }
 
@@ -59,8 +70,8 @@ public class MapDB {
                     new TypeReference<>() {});
             if (users != null) usersMap.putAll(users);
 
-        } catch (IOException e) {
-            throw new RuntimeException("Ошибка чтения базы данных: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.info("Ошибка чтения базы данных: {}", e.getMessage(), e);
         }
     }
 
@@ -75,7 +86,7 @@ public class MapDB {
             String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(export);
             Files.write(dbFile.toPath(), json.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new RuntimeException("Ошибка сохранения базы данных: " + e.getMessage(), e);
+            log.info("Ошибка сохранения базы данных: ", e);
         }
     }
 
