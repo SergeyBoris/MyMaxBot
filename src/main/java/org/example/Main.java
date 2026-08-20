@@ -31,10 +31,7 @@ public class Main {
     public static void main(String[] args) {
         System.setProperty("file.encoding", "UTF-8");
         System.setProperty("console.encoding", "UTF-8");
-        if (!SystemTray.isSupported()) {
-            log.info("Системный трей не поддерживается на этой платформе.");
-            return;
-        }
+
         try {
             MapDB db = new MapDB(mapper);
             ConfigLoader.load("config.json", Config.class);
@@ -61,7 +58,7 @@ public class Main {
             monitoringThread.start();
             scheduler.start();
             // Запускаем бесконечный long-poll
-            setupSystemTray(findReqProcessor);
+           // setupSystemTray(findReqProcessor);
 
             while (running) {
                 try {
@@ -101,52 +98,52 @@ public class Main {
         }
     }
 
-    private static void setupSystemTray(FindReqProcessor findReqProcessor) {
-        SystemTray tray = SystemTray.getSystemTray();
-
-        // Загружаем иконку (положите файл icon.png в resources или рядом с jar)
-        Image image;
-        try {
-            image = ImageIO.read(Objects.requireNonNull(Main.class.getResource("/tray.png")));
-        } catch (Exception e) {
-            image = createDefaultIcon(); // создаём простую иконку, если файл не найден
-        }
-
-        // Создаём TrayIcon с подсказкой
-        trayIcon = new TrayIcon(image, "Бот MAX");
-
-        // Настройка иконки (масштабирование, прозрачность)
-        trayIcon.setImageAutoSize(true);
-
-        // Создаём меню трея
-        PopupMenu popup = new PopupMenu();
-
-
-        MenuItem exitItem = new MenuItem("Выход");
-        exitItem.addActionListener(e -> {
-            findReqProcessor.shutdown();
-            running = false;
-            try {
-                Thread.sleep(Const.CHECK_NEW_REQUEST_TIME_DELAY + 500);
-            } catch (InterruptedException ex) {
-                throw new RuntimeException(ex);
-            }
-            System.exit(0);
-        });
-        popup.add(exitItem);
-
-        trayIcon.setPopupMenu(popup);
-
-        // Добавляем иконку в трей
-        try {
-            tray.add(trayIcon);
-        } catch (AWTException e) {
-            System.err.println("Ошибка добавления иконки в трей: " + e);
-        }
-
-        // Сообщение о запуске
-        trayIcon.displayMessage("Бот запущен", "Работает в фоне", TrayIcon.MessageType.INFO);
-    }
+//    private static void setupSystemTray(FindReqProcessor findReqProcessor) {
+//        SystemTray tray = SystemTray.getSystemTray();
+//
+//        // Загружаем иконку (положите файл icon.png в resources или рядом с jar)
+//        Image image;
+//        try {
+//            image = ImageIO.read(Objects.requireNonNull(Main.class.getResource("/tray.png")));
+//        } catch (Exception e) {
+//            image = createDefaultIcon(); // создаём простую иконку, если файл не найден
+//        }
+//
+//        // Создаём TrayIcon с подсказкой
+//        trayIcon = new TrayIcon(image, "Бот MAX");
+//
+//        // Настройка иконки (масштабирование, прозрачность)
+//        trayIcon.setImageAutoSize(true);
+//
+//        // Создаём меню трея
+//        PopupMenu popup = new PopupMenu();
+//
+//
+//        MenuItem exitItem = new MenuItem("Выход");
+//        exitItem.addActionListener(e -> {
+//            findReqProcessor.shutdown();
+//            running = false;
+//            try {
+//                Thread.sleep(Const.CHECK_NEW_REQUEST_TIME_DELAY + 500);
+//            } catch (InterruptedException ex) {
+//                throw new RuntimeException(ex);
+//            }
+//            System.exit(0);
+//        });
+//        popup.add(exitItem);
+//
+//        trayIcon.setPopupMenu(popup);
+//
+//        // Добавляем иконку в трей
+//        try {
+//            tray.add(trayIcon);
+//        } catch (AWTException e) {
+//            System.err.println("Ошибка добавления иконки в трей: " + e);
+//        }
+//
+//        // Сообщение о запуске
+//        trayIcon.displayMessage("Бот запущен", "Работает в фоне", TrayIcon.MessageType.INFO);
+//    }
 
     // Создаёт простую иконку по умолчанию (если файл не найден)
     private static Image createDefaultIcon() {

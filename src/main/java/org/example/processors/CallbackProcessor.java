@@ -79,7 +79,7 @@ public class CallbackProcessor {
 
                 case "end_photo" -> {
                     if (usersSessions != null && usersSessions.containsKey(update.getCallBack().getUser().getUserId())) {
-
+                        messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "Обработка..", null);
                         UserUploadSession userUploadSession = usersSessions.get(userId);
                         String text = usersSessions.get(userId).getText();
                         String status = usersSessions.get(userId).getStatus();

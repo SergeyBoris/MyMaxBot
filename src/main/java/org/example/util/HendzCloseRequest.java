@@ -1,11 +1,13 @@
 package org.example.util;
 
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.example.entity.Req;
 
 import java.io.File;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class HendzCloseRequest {
 
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 YaBrowser/26.4.0.0 Safari/537.36";
@@ -28,21 +31,30 @@ public class HendzCloseRequest {
             .build();
 
     public static boolean close(Req req, UserUploadSession userUploadSession,String cookie) {
+        StringBuilder logString =  new StringBuilder();
         String ticketId = req.params.get("ticketId");;
         String outgoingId = req.params.get("outgoing");
         LocalDateTime timeNow = LocalDateTime.now();
         DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         DateTimeFormatter formatterTime = DateTimeFormatter.ofPattern("HH:mm");
         String workDate = timeNow.format(formatterDate);
+        logString.append("workDate = " + workDate).append("\n");
+
         LocalDateTime beginTime = timeNow.minusMinutes(10);
+        logString.append("beginTime = " + beginTime.format(formatterDate)).append("\n");
+
         String arrivalTime = beginTime.format(formatterTime);
+        logString.append("arrivalTime = " + arrivalTime).append("\n");
+
         String endTime = timeNow.format(formatterTime);
+        logString.append("endTime = " + endTime).append("\n");
+
         String statusUid;
         String closeMode;
         String testWorkDescription = userUploadSession.getText();
-        System.out.println("testWorkDescription = " + testWorkDescription);
         String workDescription = userUploadSession.getText();;
         List<Path> photos = userUploadSession.getSavedJpgPaths();
+        logString.append("photosSize = " + photos.size()).append("\n");
         Map<String, Object> params = userUploadSession.params;
 //        if (userUploadSession.getStatus().equals("Закрыто")){
 //            params.put("params[731]",workDescription);
@@ -65,11 +77,15 @@ public class HendzCloseRequest {
                 .addFormDataPart("begin_time", arrivalTime)
                 .addFormDataPart("end_time", endTime);
           //      .addFormDataPart("task_uid", "83");           // ← ID задачи (83-SLM, 88-осмотр перед абонементом, 121- подготовка к демонтажу )
-
+        logString.append("Params: \n");
         params.forEach( (k,v) -> {
+            logString.append(k).append(" = ").append(v).append("\n");
             builder.addFormDataPart(k, v.toString());
 
         });
+
+        log.info("Close req PFI without files and rudiment params: \n" + logString + "\n---END---");
+
         // matrix_ctx_device поля (все возможные узлы)
         addMatrixContextFields(builder);
 
@@ -99,10 +115,13 @@ public class HendzCloseRequest {
 
         try (Response response = client.newCall(request).execute()) {
             String responseBody = response.body() != null ? response.body().string() : "";
+            String decodedResponse = StringEscapeUtils.unescapeJava(responseBody);
             System.out.println("Status: " + response.code());
-            System.out.println("Response: " + responseBody);
+            System.out.println("Response: " + decodedResponse);
+            log.debug(decodedResponse);
             return response.isSuccessful();
         }catch (Exception e){
+            log.error("error response: " + e);
             throw new RuntimeException(e);
         }
     }

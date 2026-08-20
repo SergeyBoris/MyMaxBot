@@ -135,11 +135,11 @@ public class Pbf implements Contragent {
 
             //полный ответ
             System.out.println(responseText);
-            log.debug(responseText);
+          //  log.debug(responseText);
             root = mapper.readTree(responseText);
         } catch (Exception e) {
 
-            log.error("searchReqRest error ", e );
+            log.error("PBF searchReqRest error ", e );
             throw new RuntimeException(e);
         }
 
@@ -214,6 +214,7 @@ public class Pbf implements Contragent {
             String number = req.getRequestNumber();
 
             if (!cashedRequests.containsKey(number)) {
+                log.info("New request PBF: \n" + req.toStringForLog());
                 // Выполняем дополнительный код для НОВЫХ заявок
                 addReqToCash(req);
             }

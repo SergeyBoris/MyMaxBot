@@ -3,6 +3,7 @@ package org.example.entity.Contragents;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.Message;
+import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
 import org.example.constants.ConstPfi;
 import org.example.db.MapDB;
@@ -28,6 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class Pfi implements Contragent {
 
     public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 YaBrowser/26.4.0.0 Safari/537.36";
@@ -36,11 +38,11 @@ public class Pfi implements Contragent {
     private final MessageService messageService;
     private final MapDB db;
     private final Map<String, Req> cashedRequests;
-    private  HttpClient client = HttpClient.newHttpClient();
+    private HttpClient client = HttpClient.newHttpClient();
     private String cookie;
     private final String name;
 
-    public Pfi(MessageService messageService, MapDB db,String name){
+    public Pfi(MessageService messageService, MapDB db, String name) {
         this.messageService = messageService;
         this.db = db;
         this.cookie = login();
@@ -48,6 +50,7 @@ public class Pfi implements Contragent {
         cashedRequests = new ConcurrentHashMap<>();
 
     }
+
     @Override
     public List<Req> getAllRequests() {
 //        if (cashedRequests.isEmpty()){
@@ -65,7 +68,7 @@ public class Pfi implements Contragent {
     public boolean closeReq(Req req, UserUploadSession userUploadSession) {
 
 
-        return  HendzCloseRequest.close(req, userUploadSession,cookie);
+        return HendzCloseRequest.close(req, userUploadSession, cookie);
     }
 
     @Override
@@ -89,10 +92,10 @@ public class Pfi implements Contragent {
                 .build();
 
         try {
-            HttpResponse<String> response =  client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             // System.out.println(response.body());
             System.out.println("статус код " + response.statusCode());
-            if(response.statusCode() != 200){
+            if (response.statusCode() != 200) {
                 login();
             }
             allRequests = parseReq(response.body());
@@ -112,6 +115,7 @@ public class Pfi implements Contragent {
 
             if (!cashedRequests.containsKey(number)) {
                 // Выполняем дополнительный код для НОВЫХ заявок
+                log.info("Новая заявка: " + req.toStringForLog());
                 addReqToCash(req);
             }
         }
@@ -134,7 +138,7 @@ public class Pfi implements Contragent {
 
     private List<Req> parseReq(String responseBody) {
         ObjectMapper mapper = new ObjectMapper();
-       List<Req> reqList = new ArrayList<>();
+        List<Req> reqList = new ArrayList<>();
         try {
             JsonNode fullJson = mapper.readTree(responseBody);
             JsonNode requestsJson = fullJson.get("ticketsGeo");
@@ -144,7 +148,7 @@ public class Pfi implements Contragent {
                     Req req = new Req();
                     String requestNumber = reqJson.get("number").asText();
                     String ticketId = reqJson.get("id").asText();  // ticketId = "21851"
-                    String payload = "show_overdue=0&ticket_id=" + ticketId ;
+                    String payload = "show_overdue=0&ticket_id=" + ticketId;
                     HttpRequest request = HttpRequest.newBuilder()
                             .uri(URI.create("https://work.hendz.ru:10294/pfi?show_overdue=0"))
                             .header("cookie", cookie)
@@ -163,12 +167,12 @@ public class Pfi implements Contragent {
                         JsonNode result = json.get("result");
                         System.out.println("Весь JSON: " + json.toPrettyString());
                         if (result.has("ticketHtml")) {
-                            req = parseTicketModal( result.get("ticketHtml").asText(),req);
+                            req = parseTicketModal(result.get("ticketHtml").asText(), req);
                             req.setRequestNumber(requestNumber);
                             req.setContragent(this);
-                            req.params.put("outgoing",result.get("outgoing").asText());
-                            System.out.println("json.get(utgoingtextValue()"  + result.get("outgoing").asText());
-                            req.params.put("ticketId",ticketId);
+                            req.params.put("outgoing", result.get("outgoing").asText());
+                            System.out.println("json.get(utgoingtextValue()" + result.get("outgoing").asText());
+                            req.params.put("ticketId", ticketId);
                             reqList.add(req);
                         }
                     }
@@ -183,48 +187,57 @@ public class Pfi implements Contragent {
 
     @Override
     public void specialContragentAction(String action, UserUploadSession userUploadSession) {
-        switch (action){
+        switch (action) {
             case "Локализовано" -> {
-                    userUploadSession.setNextMessageToUser("Напишите ФИО сотрудника ТСТ",Const.KEYBOARD_CANCEL); // следующее сообщение
-                    userUploadSession.setParams("task_uid","83");
-                    userUploadSession.setParams("status_uid", "639");
-                    userUploadSession.setParams("close_mode", "no_onsite");
+                userUploadSession.setNextMessageToUser("Напишите ФИО сотрудника ТСТ", Const.KEYBOARD_CANCEL); // следующее сообщение
+                userUploadSession.setParams("task_uid", "83");
+                userUploadSession.setParams("status_uid", "639");
+                userUploadSession.setParams("close_mode", "no_onsite");
             }
-            case "Закрыто" ->{
-                userUploadSession.setParams("task_uid","83");
+            case "Закрыто" -> {
+                userUploadSession.setParams("task_uid", "83");
                 userUploadSession.setParams("status_uid", "518");
                 userUploadSession.setParams("close_mode", "onsite");
-                userUploadSession.setNextMessageToUser("Введите текст заявки закрытие с выездом: ",Const.KEYBOARD_CANCEL);
+                userUploadSession.setNextMessageToUser("Введите текст заявки закрытие с выездом: ", Const.KEYBOARD_CANCEL);
             }
             case "Напишите ФИО сотрудника ТСТ" -> {
                 userUploadSession.setParams("params[791]", userUploadSession.getText()); // имя отправителя заявки
-                userUploadSession.setNextMessageToUser("Введите текст заявки для закрытия без выезда: ",Const.KEYBOARD_CANCEL); // следующее сообщение
+                userUploadSession.setNextMessageToUser("Введите текст заявки для закрытия без выезда: ", Const.KEYBOARD_CANCEL); // следующее сообщение
             }
             case "Введите текст заявки для закрытия без выезда: " -> {
                 userUploadSession.setParams("params[792]", userUploadSession.getText()); // имя отправителя заявки
-                userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ",Const.KEYBOARD_END_PHOTO); // следующее сообщение
+                userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ", Const.KEYBOARD_END_PHOTO); // следующее сообщение
             }
             case "Введите текст заявки закрытие с выездом: " -> {
                 userUploadSession.setParams("params[731]", userUploadSession.getText()); // имя отправителя заявки
-                userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ",Const.KEYBOARD_END_PHOTO); // следующее сообщение
+                userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ", Const.KEYBOARD_END_PHOTO); // следующее сообщение
             }
             case "p_n_r_worked" -> {
-                userUploadSession.setParams("task_uid","88");
+
+                String requestNumber = userUploadSession.getRequestNumber();
+                Req req = cashedRequests.get(requestNumber);
+                if (req != null) {
+                    userUploadSession.setParams("params[593]", req.getTID()); // TID
+                    userUploadSession.setParams("params[591]", req.params.get("params[591]"));  // serial ADM
+                } else {
+                    log.error("Req {} not found serial and TID not wrote", requestNumber);
+                }
+                userUploadSession.setParams("task_uid", "88");
                 userUploadSession.setParams("status_uid", "531");       // статус - ПНР
-                userUploadSession.setParams("params[920]","ПНР успех"); // описание работ
-                userUploadSession.setNextMessageToUser("Введите серийный номер терминала текстом:",Const.KEYBOARD_CANCEL);
+                userUploadSession.setParams("params[920]", "ПНР успех"); // описание работ
+                userUploadSession.setNextMessageToUser("Введите серийный номер терминала текстом:", Const.KEYBOARD_CANCEL);
             }
-            case "Введите серийный номер терминала текстом:" ->{
-                userUploadSession.setParams("params[920]","ПНР успех"); // описание работ
+            case "Введите серийный номер терминала текстом:" -> {
+                userUploadSession.setParams("params[920]", "ПНР успех"); // описание работ
                 userUploadSession.setParams("close_mode", "onsite");
                 userUploadSession.setParams("params[592]", userUploadSession.getText());
                 userUploadSession.setText("");
-                userUploadSession.setNextMessageToUser("Введите контактные данные представителя ТСТ:",Const.KEYBOARD_CANCEL);
+                userUploadSession.setNextMessageToUser("Введите контактные данные представителя ТСТ:", Const.KEYBOARD_CANCEL);
 
             }
             case "Введите контактные данные представителя ТСТ:" -> {
                 userUploadSession.setParams("params[894]", userUploadSession.getText()); // имя отправителя заявки
-                userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ",Const.KEYBOARD_END_PHOTO);
+                userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ", Const.KEYBOARD_END_PHOTO);
             }
 
         }
@@ -250,7 +263,7 @@ public class Pfi implements Contragent {
             switch (key) {
                 case "tid":
                     req.setTID(value);
-                    req.params.put("params[593]",value);
+                    req.params.put("params[593]", value);
                     System.out.println("TID: " + value);
                     break;
                 case "рекомендации":
@@ -262,26 +275,36 @@ public class Pfi implements Contragent {
                     break;
                 case "серийный номер":
                     System.out.println("SN: " + value);
-                    req.params.put("params[591]",value);
+                    req.params.put("params[591]", value);
                     break;
                 case "адрес":
                     System.out.println("Адрес: " + value);
-                        req.setRequestAddress(value);
+                    req.setRequestAddress(value);
                     break;
                 case "контрольный срок":
-                        System.out.println("SLA (из таблицы): " + value);
+                    System.out.println("SLA (из таблицы): " + value);
                     req.setSla(value);
                     break;
                 case "текст заявки":
                     System.out.println("Текст заявки: " + value);
-                    if(req.getRequestText() == null){
-                        req.setRequestText("Рекомендации: ОТСУТСВУЮТ\nТекст заявки: " + value + "\n" );
-                    }else {
-                        req.setRequestText(req.getRequestText() +"Текст заявки: " + value);
-                        }
+                    if (req.getRequestText() == null) {
+                        req.setRequestText("Рекомендации: ОТСУТСВУЮТ\nТекст заявки: " + value + "\n");
+                    } else {
+                        req.setRequestText(req.getRequestText() + "Текст заявки: " + value);
+                    }
                     break;
                 case "замечания к заявке":
-                        req.setRequestText(req.getRequestText() +"\nЗамечания к заявке: " + value);
+                    req.setRequestText(req.getRequestText() + "\nЗамечания к заявке: " + value);
+                    break;
+                case "уточнение":
+                    if (req.getRequestText() == null) {
+                        req.setRequestText("Рекомендации: ОТСУТСВУЮТ\nУточнение: " + value + "\n");
+                    } else {
+                        req.setRequestText(req.getRequestText() + "Уточнение: " + value);
+                    }
+                    break;
+                case "клиент":
+                    req.params.put("Клиент", value);
                     break;
             }
         }
@@ -290,9 +313,8 @@ public class Pfi implements Contragent {
 
     private String login() {
         String userAuthCookie = "";
-        String sessionCookie="";
+        String sessionCookie = "";
         try {
-            ObjectMapper mapper = new ObjectMapper();
             client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://work.hendz.ru:10294/account/login"))
@@ -332,7 +354,7 @@ public class Pfi implements Contragent {
             for (String cookie : cookies) {
                 if (cookie.startsWith("user_auth")) {
                     userAuthCookie = cookie;
-                }else {
+                } else {
                     sessionCookie = cookie;
                 }
             }

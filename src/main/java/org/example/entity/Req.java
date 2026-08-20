@@ -49,7 +49,7 @@ public class Req {
     private boolean actual;
 
     private static void appendIfNotNull(StringBuilder sb, String fieldName, Object value) {
-        if (value != null) {
+        if (value != null && !value.equals("null")) {
             sb.append("\n").append(fieldName).append(": ").append(value);
         }
     }
@@ -69,9 +69,11 @@ public class Req {
         textBuilder.append(requestText);
 
         appendIfNotNull(textBuilder, "TID", TID);
+        appendIfNotNull(textBuilder, "SerialADM: ",params.get("params[591]") + "\n");
         appendIfNotNull(textBuilder, "Тел", phone);
         appendIfNotNull(textBuilder, "priority", priority);
         appendIfNotNull(textBuilder, "Время создания", formattedDate);
+        appendIfNotNull(textBuilder, "Клиент: ", params.get("Клиент"));
         appendIfNotNull(textBuilder, "Адрес", requestAddress);
         appendIfNotNull(textBuilder, "sla", sla);
 
@@ -79,4 +81,28 @@ public class Req {
 
         return textBuilder.toString();
     }
+    public String toStringForLog() {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
+        String formattedDate = creationTime != null ? creationTime.format(formatter) : null;
+        StringBuilder textBuilder = new StringBuilder();
+        textBuilder.append(requestNumber).append("\n");
+        textBuilder.append(contragent.getContragentName()).append("\n");
+        textBuilder.append(requestText);
+
+        appendIfNotNull(textBuilder, "TID", TID + "\n");
+        appendIfNotNull(textBuilder, "SerialADM: ",params.get("params[591]") + "\n");
+        appendIfNotNull(textBuilder, "Тел", phone + "\n");
+        appendIfNotNull(textBuilder, "priority", priority + "\n");
+        appendIfNotNull(textBuilder, "Время создания", formattedDate + "\n");
+        appendIfNotNull(textBuilder, "Клиент: ", params.get("Клиент"));
+        appendIfNotNull(textBuilder, "Адрес", requestAddress + "\n");
+        appendIfNotNull(textBuilder, "sla", sla + "\n");
+        params.forEach((k,v)-> appendIfNotNull(textBuilder, k, v + "\n"));
+
+
+
+        return textBuilder.toString();
+    }
+
+
 }
