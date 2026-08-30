@@ -1,5 +1,6 @@
 package org.example.util;
 
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class HendzCloseRequest {
 
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 YaBrowser/26.4.0.0 Safari/537.36";
@@ -67,6 +69,21 @@ public class HendzCloseRequest {
           //      .addFormDataPart("task_uid", "83");           // ← ID задачи (83-SLM, 88-осмотр перед абонементом, 121- подготовка к демонтажу )
 
         params.forEach( (k,v) -> {
+            log.info("closed PFI param: {} - {} \n", k, v.toString());
+
+            if ("params[593]".equals(k) && v == null){
+                v= "000000";
+            }
+
+            if ("params[591]".equals(k)) {
+                if (v==null || !v.toString().matches("2600000\\d{6}")){
+                    v = "2600000000000";
+                }
+            }
+
+            if (v == null){
+                v = "000000";
+            }
             builder.addFormDataPart(k, v.toString());
 
         });

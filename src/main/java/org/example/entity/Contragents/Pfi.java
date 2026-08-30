@@ -3,6 +3,7 @@ package org.example.entity.Contragents;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.Message;
+import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
 import org.example.constants.ConstPfi;
 import org.example.db.MapDB;
@@ -28,6 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class Pfi implements Contragent {
 
     public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 YaBrowser/26.4.0.0 Safari/537.36";
@@ -217,13 +219,17 @@ public class Pfi implements Contragent {
             case "Введите серийный номер терминала текстом:" ->{
                 userUploadSession.setParams("params[920]","ПНР успех"); // описание работ
                 userUploadSession.setParams("close_mode", "onsite");
-                userUploadSession.setParams("params[592]", userUploadSession.getText());
+                String serialTerminal = userUploadSession.getText();
+                log.info("entered serialTerminal {}",serialTerminal);
+                userUploadSession.setParams("params[592]", serialTerminal);
                 userUploadSession.setText("");
                 userUploadSession.setNextMessageToUser("Введите контактные данные представителя ТСТ:",Const.KEYBOARD_CANCEL);
 
             }
             case "Введите контактные данные представителя ТСТ:" -> {
-                userUploadSession.setParams("params[894]", userUploadSession.getText()); // имя отправителя заявки
+                String phoneContactOnTst = userUploadSession.getText();
+                log.info("entered phoneContactOnTst {}",phoneContactOnTst);
+                userUploadSession.setParams("params[894]", phoneContactOnTst); // имя отправителя заявки
                 userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ",Const.KEYBOARD_END_PHOTO);
             }
 
