@@ -126,6 +126,7 @@ public class Pfi implements Contragent {
             messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PFI);
         }
         cashedRequests.put(req.getRequestNumber(), req);
+        log.info("New req {}",req.getRequestNumber());
 
     }
 
@@ -217,7 +218,6 @@ public class Pfi implements Contragent {
                 userUploadSession.setNextMessageToUser("Введите серийный номер терминала текстом:",Const.KEYBOARD_CANCEL);
             }
             case "Введите серийный номер терминала текстом:" ->{
-                userUploadSession.setParams("params[920]","ПНР успех"); // описание работ
                 userUploadSession.setParams("close_mode", "onsite");
                 String serialTerminal = userUploadSession.getText();
                 log.info("entered serialTerminal {}",serialTerminal);
@@ -226,12 +226,23 @@ public class Pfi implements Contragent {
                 userUploadSession.setNextMessageToUser("Введите контактные данные представителя ТСТ:",Const.KEYBOARD_CANCEL);
 
             }
+            case "p_n_r_not_allowed" ->{
+                userUploadSession.setParams("status_uid", "530"); // статус "не допущен"
+                userUploadSession.setNextMessageToUser("Введите описание работ для статуса допуск не обеспечен:",Const.KEYBOARD_CANCEL);
+            }
+            case "Введите описание работ для статуса допуск не обеспечен:" ->{
+                String comment = userUploadSession.getText();
+                userUploadSession.setParams("params[590]",comment);
+                userUploadSession.setParams("close_mode", "onsite");
+                userUploadSession.setNextMessageToUser("Введите контактные данные представителя ТСТ:",Const.KEYBOARD_CANCEL);
+            }
             case "Введите контактные данные представителя ТСТ:" -> {
                 String phoneContactOnTst = userUploadSession.getText();
                 log.info("entered phoneContactOnTst {}",phoneContactOnTst);
-                userUploadSession.setParams("params[894]", phoneContactOnTst); // имя отправителя заявки
+                userUploadSession.setParams("params[974]", phoneContactOnTst); // имя отправителя заявки
                 userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ",Const.KEYBOARD_END_PHOTO);
             }
+
 
         }
 

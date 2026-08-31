@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.entity.Contragents.Contragent;
 import org.example.entity.Req;
 import org.example.util.UserUploadSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.http.HttpClient;
 import java.nio.file.Path;
@@ -12,6 +14,7 @@ import java.util.Optional;
 
 public class RequestService {
 
+    private static final Logger log = LoggerFactory.getLogger(RequestService.class);
     private final ContragentFactory contragentFactory;
     private final HttpClient client;
     private final ObjectMapper mapper;
@@ -36,6 +39,7 @@ public class RequestService {
         Contragent contragent = contragentFactory.getContragent(userUploadSession.getContragent());
         Req req = getRequestByNumber(userUploadSession.getContragent(),userUploadSession.getRequestNumber()).orElse(null);
         if (req == null) {
+            log.info("request not found {}",userUploadSession.getRequestNumber());
             return false;
         }
 

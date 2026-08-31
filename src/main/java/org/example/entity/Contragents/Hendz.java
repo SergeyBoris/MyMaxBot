@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
 import org.example.db.MapDB;
 import org.example.entity.Req;
@@ -18,7 +19,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+@Slf4j
 @AllArgsConstructor
 public class Hendz implements Contragent {
 
@@ -60,6 +61,7 @@ public class Hendz implements Contragent {
             messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ALL_REQ);
         }
         cashedRequests.put(req.getRequestNumber(), req);
+        log.info("New req {}",req.getRequestNumber());
     }
 
     @Override
@@ -87,7 +89,7 @@ public class Hendz implements Contragent {
                     messageService.sendSimpleMessage(db.getUserChatId(user), messageText, Const.KEYBOARD_ALL_REQ);
                 }
                 cashedRequests.remove(req.getRequestNumber());
-
+                log.info("req HENDS autoclosed {}",req.getRequestNumber());
             }
 
         } catch (Exception e) {

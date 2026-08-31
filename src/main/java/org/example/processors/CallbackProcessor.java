@@ -160,6 +160,13 @@ public class CallbackProcessor {
                     requestService.specialContragentAction("PFI", "p_n_r_worked", usersSessions.get(userId));
 
                     extractNextMessageToUser(update, userId);
+                } case "p_n_r_not_allowed" -> {
+                    UserUploadSession userUploadSession = usersSessions.get(userId);
+                    String reqNumber = userUploadSession.getRequestNumber();
+                    log.info("button P_N_R reqNum = {}\n {}", reqNumber, LocalDateTime.now());
+                    requestService.specialContragentAction("PFI", "p_n_r_not_allowed", usersSessions.get(userId));
+
+                    extractNextMessageToUser(update, userId);
                 }
 
                     default -> System.out.println("какимто чудом узерсессия нулевая");

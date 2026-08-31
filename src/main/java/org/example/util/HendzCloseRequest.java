@@ -1,5 +1,7 @@
 package org.example.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -18,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
 
 @Slf4j
 public class HendzCloseRequest {
@@ -69,7 +72,7 @@ public class HendzCloseRequest {
           //      .addFormDataPart("task_uid", "83");           // ← ID задачи (83-SLM, 88-осмотр перед абонементом, 121- подготовка к демонтажу )
 
         params.forEach( (k,v) -> {
-            log.info("closed PFI param: {} - {} \n", k, v.toString());
+            log.info("closed PFI param: {} - {}", k, v.toString());
 
             if ("params[593]".equals(k) && v == null){
                 v= "000000";
@@ -115,11 +118,22 @@ public class HendzCloseRequest {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
+            ObjectMapper mapper = new ObjectMapper();
             String responseBody = response.body() != null ? response.body().string() : "";
-            System.out.println("Status: " + response.code());
-            System.out.println("Response: " + responseBody);
-            return response.isSuccessful();
+            JsonNode json = mapper.readTree(responseBody);
+            System.out.println("Весь JSON: " + json.toPrettyString());
+            log.info("PFI response Json: {}",json.toPrettyString());
+            log.info("ResponseBody: {}", responseBody);
+            if (json.has("pfiValidationErrorMap")){
+                String errorJson = json.get("pfiValidationErrorMap").toPrettyString();
+                log.info("response fom pfi error: {}",errorJson);
+                return !response.isSuccessful();
+            }else {
+                log.info("response from pfi OK");
+                return response.isSuccessful();
+            }
         }catch (Exception e){
+            log.error(e.getMessage());
             throw new RuntimeException(e);
         }
     }

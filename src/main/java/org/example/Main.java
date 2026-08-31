@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Main {
     public static final Map<Long, UserUploadSession> usersSessions = new ConcurrentHashMap<>();
     private static final HttpClient client = HttpClient.newHttpClient();
-    private static final ObjectMapper mapper = new ObjectMapper();
+    public static final ObjectMapper mapper = new ObjectMapper();
     private static TrayIcon trayIcon;
     private static boolean running = true;
 

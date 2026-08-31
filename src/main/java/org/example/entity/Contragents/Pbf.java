@@ -134,8 +134,7 @@ public class Pbf implements Contragent {
             String responseText = response.body();
 
             //полный ответ
-            System.out.println(responseText);
-            log.debug(responseText);
+       //     System.out.println(responseText);
             root = mapper.readTree(responseText);
         } catch (Exception e) {
 
@@ -144,9 +143,8 @@ public class Pbf implements Contragent {
         }
 
 
-        System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         int total = root.path("total").asInt();
-        System.out.println("Всего задач: " + total);
+   //     System.out.println("Всего задач: " + total);
 // Получаем массив issues
         JsonNode issues = root.path("issues");
         List<Req> allRequests = new ArrayList<>();
@@ -183,16 +181,16 @@ public class Pbf implements Contragent {
             Req req = new Req();
 
             // Выводим данные
-            System.out.println("Номер заявки: " + key);
-            System.out.println("Краткое описание: " + summary);
-            System.out.println("Описание: " + description);
-            System.out.println("TID: " + tid);
-            System.out.println("address: " + address);
-            System.out.println("тел: " + phone);
-            System.out.println("Приоритет: " + priority);
-            System.out.println("Статус: " + statusName);
-            System.out.println("Создано: " + odt.format(formattedDate));
-            System.out.println("---");
+//            System.out.println("Номер заявки: " + key);
+//            System.out.println("Краткое описание: " + summary);
+//            System.out.println("Описание: " + description);
+//            System.out.println("TID: " + tid);
+//            System.out.println("address: " + address);
+//            System.out.println("тел: " + phone);
+//            System.out.println("Приоритет: " + priority);
+//            System.out.println("Статус: " + statusName);
+//            System.out.println("Создано: " + odt.format(formattedDate));
+//            System.out.println("---");
             req.setRequestNumber(key);
             req.setRequestText(summary + "\n" + description);
             req.setTID(tid);
@@ -232,6 +230,7 @@ public class Pbf implements Contragent {
             messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
         }
         cashedRequests.put(req.getRequestNumber(), req);
+        log.info("New req {}",req.getRequestNumber());
 
     }
 
