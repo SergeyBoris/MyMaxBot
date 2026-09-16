@@ -1,10 +1,10 @@
 {
+  "lastMarker" : {
+    "lastMarker" : 2147483647
+  },
+  "requests" : { },
   "users" : {
     "14863801" : 249013248,
     "204749863" : 33641886
-  },
-  "lastMarker" : {
-    "lastMarker" : 14222
-  },
-  "requests" : { }
+  }
 }

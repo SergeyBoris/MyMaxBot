@@ -10,6 +10,7 @@ import org.example.services.*;
 import org.example.configs.Config;
 import org.example.configs.ConfigLoader;
 import org.example.util.UserUploadSession;
+import org.example.util.VersionUtil;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -35,6 +36,7 @@ public class Main {
             log.info("Системный трей не поддерживается на этой платформе.");
 
         }
+        System.out.println(VersionUtil.getFullInfo());
         try {
             MapDB db = new MapDB(mapper);
             ConfigLoader.load("config.json", Config.class);
@@ -113,7 +115,7 @@ public class Main {
         }
 
         // Создаём TrayIcon с подсказкой
-        trayIcon = new TrayIcon(image, "Бот MAX");
+        trayIcon = new TrayIcon(image, "Бот MAX " + VersionUtil.getFullInfo());
 
         // Настройка иконки (масштабирование, прозрачность)
         trayIcon.setImageAutoSize(true);
