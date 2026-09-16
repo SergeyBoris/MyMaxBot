@@ -33,7 +33,7 @@ public class Main {
         System.setProperty("console.encoding", "UTF-8");
         if (!SystemTray.isSupported()) {
             log.info("Системный трей не поддерживается на этой платформе.");
-            return;
+
         }
         try {
             MapDB db = new MapDB(mapper);

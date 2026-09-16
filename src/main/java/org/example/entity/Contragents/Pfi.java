@@ -171,7 +171,7 @@ public class Pfi implements Contragent {
                             req.setContragent(this);
                             req.params.put("outgoing",result.get("outgoing").asText());
                             System.out.println("json.get(utgoingtextValue()"  + result.get("outgoing").asText());
-                            req.params.put("ticketId",ticketId);
+                            req.params.put("ticket_id",ticketId);
                             reqList.add(req);
                         }
                     }
@@ -239,7 +239,7 @@ public class Pfi implements Contragent {
             case "Введите контактные данные представителя ТСТ:" -> {
                 String phoneContactOnTst = userUploadSession.getText();
                 log.info("entered phoneContactOnTst {}",phoneContactOnTst);
-                userUploadSession.setParams("params[974]", phoneContactOnTst); // имя отправителя заявки
+                userUploadSession.setParams("params[894]", phoneContactOnTst); // имя отправителя заявки
                 userUploadSession.setNextMessageToUser("Приложите фото и нажмите готово ",Const.KEYBOARD_END_PHOTO);
             }
 

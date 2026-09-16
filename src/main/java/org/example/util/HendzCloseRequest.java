@@ -48,7 +48,8 @@ public class HendzCloseRequest {
         System.out.println("testWorkDescription = " + testWorkDescription);
         String workDescription = userUploadSession.getText();;
         List<Path> photos = userUploadSession.getSavedJpgPaths();
-        Map<String, Object> params = userUploadSession.params;
+        Map<String, Object> sessionParams = userUploadSession.params;
+        Map<String, String> reqParams = req.params;
 //        if (userUploadSession.getStatus().equals("Закрыто")){
 //            params.put("params[731]",workDescription);
 //        }else {
@@ -61,8 +62,6 @@ public class HendzCloseRequest {
         MultipartBody.Builder builder = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 // Основные поля
-                .addFormDataPart("ticket_id", ticketId)
-                .addFormDataPart("outgoing", outgoingId)
                 .addFormDataPart("matrix_root_device_uid", "661")
                 .addFormDataPart("executor", "3824")
                 .addFormDataPart("work_date", workDate)
@@ -70,9 +69,18 @@ public class HendzCloseRequest {
                 .addFormDataPart("begin_time", arrivalTime)
                 .addFormDataPart("end_time", endTime);
           //      .addFormDataPart("task_uid", "83");           // ← ID задачи (83-SLM, 88-осмотр перед абонементом, 121- подготовка к демонтажу )
+        log.info("PFI CLOSED PARAMS:");
+        log.info("work_date {}",workDate);
+        log.info("arrival_time {}",arrivalTime);
+        log.info("begin_time {}",beginTime);
+        log.info("end_time {}",endTime);
 
-        params.forEach( (k,v) -> {
+        reqParams.forEach((k,v) -> {
+            builder.addFormDataPart(k,v.toString());
             log.info("closed PFI param: {} - {}", k, v.toString());
+        });
+        sessionParams.forEach( (k,v) -> {
+
 
             if ("params[593]".equals(k) && v == null){
                 v= "000000";
@@ -88,6 +96,7 @@ public class HendzCloseRequest {
                 v = "000000";
             }
             builder.addFormDataPart(k, v.toString());
+            log.info("closed PFI param: {} - {}", k, v.toString());
 
         });
         // matrix_ctx_device поля (все возможные узлы)
