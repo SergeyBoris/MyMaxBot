@@ -22,6 +22,7 @@ public class ContragentFactory {
         contragentMap.put("STRIKE", new Strike(messageService,db,emailMonitorService,"STRIKE"));
         contragentMap.put("HENDZ", new Hendz(messageService,db,emailMonitorService,"HENDZ"));
         contragentMap.put("PFI", new Pfi(messageService,db,"PFI"));
+        contragentMap.put("MKB", new Mkb(messageService,db,emailMonitorService,"MKB"));
     }
 
 

@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
 import org.example.db.MapDB;
+import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
 import org.example.services.EmailMonitorService;
 import org.example.services.MessageService;
@@ -29,6 +30,10 @@ public class Hendz implements Contragent {
     private EmailMonitorService emailMonitorService;
     private final String name;
 
+    @Override
+    public InlineKeyboard getContragentReqKeyboard() {
+        return Const.KEYBOARD_ALL_REQ;
+    }
 
     @Override
     public List<Req> getAllRequests() {

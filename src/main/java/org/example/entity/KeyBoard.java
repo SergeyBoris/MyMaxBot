@@ -10,14 +10,17 @@ import java.util.List;
 public class KeyBoard {
     private final List<List<Button>> buttons;
 
+//
+//    public KeyBoard(List<Button> buttons) {
+//
+//        List<Button> row = new ArrayList<>();
+//        row.addAll(buttons);
+//        this.buttons = new ArrayList<>();
+//        this.buttons.add(row);
+//    }
+    public KeyBoard(List<List<Button>> buttons){
 
-    public KeyBoard(List<Button> buttons) {
-
-        List<Button> row = new ArrayList<>();
-        row.addAll(buttons);
-        this.buttons = new ArrayList<>();
-        this.buttons.add(row);
-
-
+        this.buttons = buttons;
     }
+
 }

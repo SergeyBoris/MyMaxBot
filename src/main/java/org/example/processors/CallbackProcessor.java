@@ -4,18 +4,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
 import org.example.db.MapDB;
 import org.example.entity.Attachment;
-import org.example.entity.Contragents.Contragent;
-import org.example.entity.Contragents.Pfi;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
 import org.example.entity.Update;
-import org.example.services.ContragentFactory;
 import org.example.services.MessageService;
 import org.example.services.RequestService;
 import org.example.services.SaveFileService;
 import org.example.util.UserUploadSession;
 
-import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -41,13 +37,18 @@ public class CallbackProcessor {
 
         if (update.getCallBack() != null) {
             String payload = update.getCallBack().getPayload();
+            String contragentName = "";
+            if(payload.startsWith("all_requests_")){
+                contragentName = payload.substring("all_requests_".length()).toUpperCase();
+                payload = "all_requests_";
+            }
             long userId = update.getCallBack().getUser().getUserId();
             switch (payload) {
-                case "all_requests_alfa" -> {
-                    List<Req> allReq = requestService.getAllRequests("PBF");
+                case "all_requests_" -> {
+                    List<Req> allReq = requestService.getAllRequests(contragentName);
                     if (allReq != null && !allReq.isEmpty()) {
                         for (Req req : allReq) {
-                            messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
+                            messageService.sendSimpleMessage(senderChatId, req.toString(), requestService.getContragentKeyboard(contragentName));
                         }
 
                     } else
@@ -114,36 +115,36 @@ public class CallbackProcessor {
                         messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "МЕНЮ", Const.KEYBOARD_ALL_REQ);
                     }
                 }
-                case "all_requests_hendz" -> {
-                    messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "ОБРАБОТКА...",null);
-                    List<Req> allReq = requestService.getAllRequests("HENDZ");
-                    if (allReq != null && !allReq.isEmpty()) {
-                        for (Req req : allReq) {
-                            messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ALL_REQ);
-                        }
-                    } else {
-                        messageService.sendSimpleMessage(senderChatId, "нет заявок", Const.KEYBOARD_ALL_REQ);
-                    }
-
-                }
+//                case "all_requests_hendz" -> {
+//                    messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "ОБРАБОТКА...",null);
+//                    List<Req> allReq = requestService.getAllRequests("HENDZ");
+//                    if (allReq != null && !allReq.isEmpty()) {
+//                        for (Req req : allReq) {
+//                            messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ALL_REQ);
+//                        }
+//                    } else {
+//                        messageService.sendSimpleMessage(senderChatId, "нет заявок", Const.KEYBOARD_ALL_REQ);
+//                    }
+//
+//                }
                 case "cancel_work_with_req" -> {
                     UserUploadSession userUploadSession = usersSessions.get(userId);
                     log.info("cancel_work_with_req {}",  userUploadSession.getRequestNumber() == null? null : userUploadSession.getRequestNumber());
                     usersSessions.remove(update.getCallBack().getUser().getUserId());
                     messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "Работа с заявкой прекращена", Const.KEYBOARD_ALL_REQ);
                 }
-                case "all_requests_pfi" -> {
-                    messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "ОБРАБОТКА...",null);
-                    List<Req> pfi = requestService.getAllRequests("PFI");
-                    if (pfi != null && !pfi.isEmpty()) {
-                        for (Req req : pfi) {
-                            messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PFI);
-                        }
-                    } else {
-                        messageService.sendSimpleMessage(senderChatId, "нет заявок", Const.KEYBOARD_ALL_REQ);
-
-                    }
-                }
+//                case "all_requests_pfi" -> {
+//                    messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "ОБРАБОТКА...",null);
+//                    List<Req> pfi = requestService.getAllRequests("PFI");
+//                    if (pfi != null && !pfi.isEmpty()) {
+//                        for (Req req : pfi) {
+//                            messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PFI);
+//                        }
+//                    } else {
+//                        messageService.sendSimpleMessage(senderChatId, "нет заявок", Const.KEYBOARD_ALL_REQ);
+//
+//                    }
+//                }
                 case "p_n_r" -> {
 
                     String[] split = update.getMessage().getBody().getText().split("\n");

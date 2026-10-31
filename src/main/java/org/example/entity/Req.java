@@ -54,6 +54,10 @@ public class Req {
         }
     }
 
+    public void setParams(String key, String val) {
+        params.put(key, val);
+    }
+
     public void setRequestText(String requestText) {
         requestText = requestText.replaceAll("\\\\(?![nrtbf\\\\\"/])", "/");
         this.requestText = requestText;
@@ -74,6 +78,7 @@ public class Req {
         appendIfNotNull(textBuilder, "Время создания", formattedDate);
         appendIfNotNull(textBuilder, "Адрес", requestAddress);
         appendIfNotNull(textBuilder, "sla", sla);
+        appendIfNotNull(textBuilder, "Время работы", params.get("Режим работы"));
 
 
 

@@ -2,13 +2,13 @@ package org.example.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.entity.Contragents.Contragent;
+import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
 import org.example.util.UserUploadSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.http.HttpClient;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -49,5 +49,10 @@ public class RequestService {
     public void specialContragentAction(String contragentType, String action,UserUploadSession userUploadSession){
         Contragent contragent = contragentFactory.getContragent(contragentType);
         contragent.specialContragentAction(action,userUploadSession);
+    }
+
+    public InlineKeyboard getContragentKeyboard(String contragentType){
+        Contragent contragent = contragentFactory.getContragent(contragentType);
+        return contragent.getContragentReqKeyboard();
     }
 }

@@ -38,6 +38,8 @@ public class EmailMonitoringProcessor implements Runnable {
                     strike.processNewEmail(message);
                 } else if (address.contains("sd4@hendz.ru")) {
                     contragentFactory.getContragentMap().get("HENDZ").processNewEmail(message);
+                }else if(address.contains("@elecsnet.ru") || address.contains("termhelp@mkb.ru")){
+                    contragentFactory.getContragentMap().get("MKB").processNewEmail(message);
                 }
                 // Помечаем как прочитанное
                 message.setFlag(Flags.Flag.SEEN, true);

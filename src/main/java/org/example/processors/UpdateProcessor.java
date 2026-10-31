@@ -9,7 +9,6 @@ import org.example.entity.Req;
 import org.example.entity.Update;
 import org.example.services.MessageService;
 import org.example.services.RequestService;
-import org.example.util.UserSessionUtil;
 import org.example.util.UserUploadSession;
 
 import java.io.IOException;
@@ -107,7 +106,7 @@ public class UpdateProcessor {
                 String text = req.getRequestNumber() + "\n"
                         + req.getRequestAddress() + "\n"
                         + req.getRequestText();
-                messageService.sendSimpleMessage(db.getUserChatId(userId), text, Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
+                messageService.sendSimpleMessage(db.getUserChatId(userId), text, Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PBF);
             }
         } else {
             List<Long> toUsersId = req.getToUsersId();
@@ -118,7 +117,7 @@ public class UpdateProcessor {
                 if (db.getUserChatId(userId) == null) {
                     System.out.println("Пользователь не найден в базе ИД = " + userId);
                 } else {
-                    messageService.sendSimpleMessage(db.getUserChatId(userId), text, Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
+                    messageService.sendSimpleMessage(db.getUserChatId(userId), text, Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PBF);
                 }
             }
 

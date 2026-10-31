@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
 import org.example.constants.ConstPfi;
 import org.example.db.MapDB;
+import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
 import org.example.services.MessageService;
 import org.example.util.HendzCloseRequest;
@@ -50,6 +51,12 @@ public class Pfi implements Contragent {
         cashedRequests = new ConcurrentHashMap<>();
 
     }
+
+    @Override
+    public InlineKeyboard getContragentReqKeyboard() {
+        return Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PFI;
+    }
+
     @Override
     public List<Req> getAllRequests() {
 //        if (cashedRequests.isEmpty()){

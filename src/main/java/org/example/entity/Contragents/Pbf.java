@@ -8,8 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.example.constants.Const;
 import org.example.constants.ConstPbf;
-import org.example.constants.ConstPfi;
 import org.example.db.MapDB;
+import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
 import org.example.services.MessageService;
 import org.example.util.UserUploadSession;
@@ -41,6 +41,11 @@ public class Pbf implements Contragent {
         this.messageService = messageService;
         cashedRequests = new ConcurrentHashMap<>();
         this.name = name;
+    }
+
+    @Override
+    public InlineKeyboard getContragentReqKeyboard() {
+        return Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PBF;
     }
 
     @Override
@@ -227,7 +232,7 @@ public class Pbf implements Contragent {
     @Override
     public void addReqToCash(Req req) {
         for (Long user : db.getAllUsers()) {
-            messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ);
+            messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PBF);
         }
         cashedRequests.put(req.getRequestNumber(), req);
         log.info("New req {}",req.getRequestNumber());
