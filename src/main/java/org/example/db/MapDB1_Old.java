@@ -2,7 +2,7 @@ package org.example.db;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.constants.Const;
-import org.example.entity.Req;
+import org.example.entity.Dto.ReqMaxDto;
 import org.example.util.RequestSerializer;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
@@ -17,7 +17,7 @@ import java.util.Set;
 public class MapDB1_Old {
 
     private final ObjectMapper mapper;
-    private HTreeMap<String, Req> requestsMap;
+    private HTreeMap<String, ReqMaxDto> requestsMap;
     private HTreeMap<String, Long> lastMarkerMap;
     private HTreeMap<Long, Long> usersMap;
     private DB db;
@@ -56,7 +56,7 @@ public class MapDB1_Old {
         // Если база новая, добавляем тестовые данные
 //        if (!exists) {
 //            Request request = new Request("Заявка 1","Текст 1 ", "Адрес 1");
-//            Request request1 = new Request("Req 2", "Test 2", "Address 2");
+//            Request request1 = new Request("ReqMaxDto 2", "Test 2", "Address 2");
 //            requestsMap.put(request.getRequestNumber(), request);
 //            requestsMap.put(request1.getRequestNumber(), request1);
 //            lastMarkerMap.put("lastMarker", 0L); // начальное значение маркера
@@ -69,7 +69,7 @@ public class MapDB1_Old {
 
     }
 
-    public Map<String, Req> getAllRequests(){
+    public Map<String, ReqMaxDto> getAllRequests(){
        return requestsMap;
     }
 
@@ -77,8 +77,8 @@ public class MapDB1_Old {
         return lastMarkerMap.get("lastMarker");
     }
 
-    public void addNewRequest(Req req){
-        requestsMap.put(req.getRequestNumber(), req);
+    public void addNewRequest(ReqMaxDto reqMaxDTO){
+        requestsMap.put(reqMaxDTO.getRequestNumber(), reqMaxDTO);
         db.commit();
     }
     public void removeRequest(String requestNumber){

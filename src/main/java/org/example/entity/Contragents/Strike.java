@@ -5,6 +5,7 @@ import jakarta.mail.Message;
 import lombok.AllArgsConstructor;
 import org.example.constants.Const;
 import org.example.db.MapDB;
+import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
 import org.example.services.EmailMonitorService;

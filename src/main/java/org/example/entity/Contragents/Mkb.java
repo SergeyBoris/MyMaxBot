@@ -2,19 +2,17 @@ package org.example.entity.Contragents;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.Message;
-import jakarta.mail.MessagingException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
 import org.example.db.MapDB;
+import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
-import org.example.services.ContragentFactory;
 import org.example.services.EmailMonitorService;
 import org.example.services.MessageService;
 import org.example.util.UserUploadSession;
 
-import java.io.IOException;
 import java.net.http.HttpClient;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -60,8 +58,9 @@ public class Mkb implements Contragent{
         for (Long user : db.getAllUsers()) {
             messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_ONLY_CLOSE);
         }
+
         cashedRequests.put(req.getRequestNumber(), req);
-        log.info("New req {}",req.getRequestNumber());
+        log.info("New req {}", req.getRequestNumber());
     }
 
     @Override
@@ -74,13 +73,13 @@ public class Mkb implements Contragent{
             List<Map<String, String>> requests = parseTasksNamed(messageBody);
             for (Map<String, String> request : requests) {
                 Req req = new Req();
-                req.setContragent(this);
+                req.setContragent(name);
                 String rnd = UUID.randomUUID().toString().substring(0, 3);
                 req.setRequestNumber("MKB-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyMMddHHmmss")) + "-" + rnd);
                 req.setRequestText(request.get("Ошибка/Время ошибки"));
                 req.setRequestAddress(request.get("Адрес") +"\n" + request.get("Наименование"));
                 req.setCreationTime(LocalDateTime.now());
-                req.setTID(request.get("№ПТ"));
+                req.setTid(request.get("№ПТ"));
                 req.setParams("Режим работы",request.get("Режим работы"));
                 if (!cashedRequests.containsKey(req.getRequestNumber())) {
                     // Выполняем дополнительный код для НОВЫХ заявок

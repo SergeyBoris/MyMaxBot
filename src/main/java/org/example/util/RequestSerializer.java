@@ -1,6 +1,6 @@
 package org.example.util;
 
-import org.example.entity.Req;
+import org.example.entity.Dto.ReqMaxDto;
 import org.jetbrains.annotations.NotNull;
 import org.mapdb.DataInput2;
 import org.mapdb.DataOutput2;
@@ -8,27 +8,27 @@ import org.mapdb.Serializer;
 
 import java.io.IOException;
 
-public class RequestSerializer implements Serializer<Req> {
+public class RequestSerializer implements Serializer<ReqMaxDto> {
 
 
 
     @Override
-    public void serialize(@NotNull DataOutput2 dataOutput2, @NotNull Req req) throws IOException {
-        dataOutput2.writeUTF(req.getRequestNumber());
-        dataOutput2.writeUTF(req.getRequestText());
-        dataOutput2.writeUTF(req.getRequestAddress());
+    public void serialize(@NotNull DataOutput2 dataOutput2, @NotNull ReqMaxDto reqMaxDTO) throws IOException {
+        dataOutput2.writeUTF(reqMaxDTO.getRequestNumber());
+        dataOutput2.writeUTF(reqMaxDTO.getRequestText());
+        dataOutput2.writeUTF(reqMaxDTO.getRequestAddress());
     }
 
     @Override
-    public Req deserialize(@NotNull DataInput2 dataInput2, int i) throws IOException {
+    public ReqMaxDto deserialize(@NotNull DataInput2 dataInput2, int i) throws IOException {
         String requestNumber = dataInput2.readUTF();
         String requestText = dataInput2.readUTF();
         String requestAddress = dataInput2.readUTF();
-        Req req = new Req();
-        req.setRequestNumber(requestNumber);
-        req.setRequestText(requestText);
-        req.setRequestAddress(requestAddress);
-        return req;
+        ReqMaxDto reqMaxDTO = new ReqMaxDto();
+        reqMaxDTO.setRequestNumber(requestNumber);
+        reqMaxDTO.setRequestText(requestText);
+        reqMaxDTO.setRequestAddress(requestAddress);
+        return reqMaxDTO;
     }
 
     @Override

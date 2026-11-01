@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
 import org.example.constants.ConstPfi;
 import org.example.db.MapDB;
+import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
 import org.example.services.MessageService;
@@ -133,7 +134,7 @@ public class Pfi implements Contragent {
             messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PFI);
         }
         cashedRequests.put(req.getRequestNumber(), req);
-        log.info("New req {}",req.getRequestNumber());
+        log.info("New reqMaxDTO {}", req.getRequestNumber());
 
     }
 
@@ -173,12 +174,12 @@ public class Pfi implements Contragent {
                         JsonNode result = json.get("result");
                         System.out.println("Весь JSON: " + json.toPrettyString());
                         if (result.has("ticketHtml")) {
-                            req = parseTicketModal( result.get("ticketHtml").asText(),req);
+                            req = parseTicketModal( result.get("ticketHtml").asText(), req);
                             req.setRequestNumber(requestNumber);
-                            req.setContragent(this);
-                            req.params.put("outgoing",result.get("outgoing").asText());
+                            req.setContragent(this.name);
+                            req.setParams("outgoing",result.get("outgoing").asText());
                             System.out.println("json.get(utgoingtextValue()"  + result.get("outgoing").asText());
-                            req.params.put("ticket_id",ticketId);
+                            req.setParams("ticket_id",ticketId);
                             reqList.add(req);
                         }
                     }
@@ -273,8 +274,8 @@ public class Pfi implements Contragent {
 
             switch (key) {
                 case "tid":
-                    req.setTID(value);
-                    req.params.put("params[593]",value);
+                    req.setTid(value);
+                    req.setParams("params[593]",value);
                     System.out.println("TID: " + value);
                     break;
                 case "рекомендации":
@@ -286,7 +287,7 @@ public class Pfi implements Contragent {
                     break;
                 case "серийный номер":
                     System.out.println("SN: " + value);
-                    req.params.put("params[591]",value);
+                    req.setParams("params[591]",value);
                     break;
                 case "адрес":
                     System.out.println("Адрес: " + value);

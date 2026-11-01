@@ -4,11 +4,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
 import org.example.db.MapDB;
 import org.example.entity.Attachment;
+import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.InlineKeyboard;
-import org.example.entity.Req;
 import org.example.entity.Update;
+import org.example.entity.mapper.ReqMapper;
+import org.example.services.BotRequestService;
 import org.example.services.MessageService;
-import org.example.services.RequestService;
 import org.example.services.SaveFileService;
 import org.example.util.UserUploadSession;
 
@@ -19,14 +20,14 @@ import java.util.Map;
 public class CallbackProcessor {
     private final MessageService messageService;
     private final MapDB db;
-    private final RequestService requestService;
+    private final BotRequestService botRequestService;
     private final Map<Long, UserUploadSession> usersSessions;
 
-    public CallbackProcessor(MessageService messageService, MapDB db, Map<Long, UserUploadSession> usersSessions, RequestService requestService) {
+    public CallbackProcessor(MessageService messageService, MapDB db, Map<Long, UserUploadSession> usersSessions, BotRequestService botRequestService) {
         this.messageService = messageService;
         this.db = db;
         this.usersSessions = usersSessions;
-        this.requestService = requestService;
+        this.botRequestService = botRequestService;
 
     }
 
@@ -45,10 +46,10 @@ public class CallbackProcessor {
             long userId = update.getCallBack().getUser().getUserId();
             switch (payload) {
                 case "all_requests_" -> {
-                    List<Req> allReq = requestService.getAllRequests(contragentName);
-                    if (allReq != null && !allReq.isEmpty()) {
-                        for (Req req : allReq) {
-                            messageService.sendSimpleMessage(senderChatId, req.toString(), requestService.getContragentKeyboard(contragentName));
+                    List<ReqMaxDto> allReqMaxDto = botRequestService.getAllRequests(contragentName);
+                    if (allReqMaxDto != null && !allReqMaxDto.isEmpty()) {
+                        for (ReqMaxDto reqMaxDTO : allReqMaxDto) {
+                            messageService.sendSimpleMessage(senderChatId, reqMaxDTO.toString(), botRequestService.getContragentKeyboard(contragentName));
                         }
 
                     } else
@@ -68,13 +69,13 @@ public class CallbackProcessor {
                     if (payload.equals("close_request")) {
                         log.info("button close_request (Закрыто) {}\n {}", reqNumber, LocalDateTime.now());
                         usersSessions.get(userId).setStatus("Закрыто");
-                        requestService.specialContragentAction(contragent, "Закрыто", usersSessions.get(userId));
+                        botRequestService.specialContragentAction(contragent, "Закрыто", usersSessions.get(userId));
 //                    String text = "Статус: Закрыто\n";
 //                    UserSessionUtil.addText(userId,text);
 
                     } else {
                         usersSessions.get(userId).setStatus("Локализовано");
-                        requestService.specialContragentAction(contragent, "Локализовано", usersSessions.get(userId));
+                        botRequestService.specialContragentAction(contragent, "Локализовано", usersSessions.get(userId));
 //                    String text = "Статус: Локализовано\n";
 //                    UserSessionUtil.addText(userId,text);
 
@@ -99,7 +100,7 @@ public class CallbackProcessor {
                             userUploadSession.setSavedJpgPaths(SaveFileService.saveFile(update.getCallBack().getUser(), requestNumber, text, photoUrls, status));
                         }
 
-                        boolean successClosed = requestService.closeRequest(userUploadSession);
+                        boolean successClosed = botRequestService.closeRequest(userUploadSession);
                         if (successClosed) {
                             log.info("button end_photo (success response) {}\n {}", requestNumber, LocalDateTime.now());
 
@@ -117,9 +118,9 @@ public class CallbackProcessor {
                 }
 //                case "all_requests_hendz" -> {
 //                    messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "ОБРАБОТКА...",null);
-//                    List<Req> allReq = requestService.getAllRequests("HENDZ");
+//                    List<ReqMaxDto> allReq = botRequestService.getAllRequests("HENDZ");
 //                    if (allReq != null && !allReq.isEmpty()) {
-//                        for (Req req : allReq) {
+//                        for (ReqMaxDto req : allReq) {
 //                            messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ALL_REQ);
 //                        }
 //                    } else {
@@ -135,9 +136,9 @@ public class CallbackProcessor {
                 }
 //                case "all_requests_pfi" -> {
 //                    messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "ОБРАБОТКА...",null);
-//                    List<Req> pfi = requestService.getAllRequests("PFI");
+//                    List<ReqMaxDto> pfi = botRequestService.getAllRequests("PFI");
 //                    if (pfi != null && !pfi.isEmpty()) {
-//                        for (Req req : pfi) {
+//                        for (ReqMaxDto req : pfi) {
 //                            messageService.sendSimpleMessage(senderChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PFI);
 //                        }
 //                    } else {
@@ -158,14 +159,14 @@ public class CallbackProcessor {
                     UserUploadSession userUploadSession = usersSessions.get(userId);
                     String reqNumber = userUploadSession.getRequestNumber();
                     log.info("button P_N_R reqNum = {}\n {}", reqNumber, LocalDateTime.now());
-                    requestService.specialContragentAction("PFI", "p_n_r_worked", usersSessions.get(userId));
+                    botRequestService.specialContragentAction("PFI", "p_n_r_worked", usersSessions.get(userId));
 
                     extractNextMessageToUser(update, userId);
                 } case "p_n_r_not_allowed" -> {
                     UserUploadSession userUploadSession = usersSessions.get(userId);
                     String reqNumber = userUploadSession.getRequestNumber();
                     log.info("button P_N_R reqNum = {}\n {}", reqNumber, LocalDateTime.now());
-                    requestService.specialContragentAction("PFI", "p_n_r_not_allowed", usersSessions.get(userId));
+                    botRequestService.specialContragentAction("PFI", "p_n_r_not_allowed", usersSessions.get(userId));
 
                     extractNextMessageToUser(update, userId);
                 }

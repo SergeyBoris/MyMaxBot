@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
-import org.example.entity.Req;
+import org.example.entity.Dto.ReqMaxDto;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -13,7 +13,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class MapDB {
@@ -21,7 +20,7 @@ public class MapDB {
     private final ObjectMapper mapper;
     private final File dbFile;
 
-    private final ConcurrentHashMap<String, Req> requestsMap;
+    private final ConcurrentHashMap<String, ReqMaxDto> requestsMap;
     private final ConcurrentHashMap<String, Long> lastMarkerMap;
     private final ConcurrentHashMap<Long, Long> usersMap;
 
@@ -56,7 +55,7 @@ public class MapDB {
             Map<String, Object> root = mapper.readValue(dbFile, new TypeReference<>() {});
 
             // requests
-            Map<String, Req> requests = mapper.convertValue(root.get("requests"),
+            Map<String, ReqMaxDto> requests = mapper.convertValue(root.get("requests"),
                     new TypeReference<>() {});
             if (requests != null) requestsMap.putAll(requests);
 
@@ -91,12 +90,12 @@ public class MapDB {
     }
 
     // --- Методы работы с requests ---
-    public Map<String, Req> getAllRequests() {
+    public Map<String, ReqMaxDto> getAllRequests() {
         return Map.copyOf(requestsMap);
     }
 
-    public void addNewRequest(Req req) {
-        requestsMap.put(req.getRequestNumber(), req);
+    public void addNewRequest(ReqMaxDto reqMaxDTO) {
+        requestsMap.put(reqMaxDTO.getRequestNumber(), reqMaxDTO);
         saveDb();
     }
 

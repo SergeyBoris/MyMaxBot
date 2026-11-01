@@ -3,7 +3,7 @@ package org.example.processors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.constants.Const;
 import org.example.db.MapDB;
-import org.example.entity.Req;
+import org.example.entity.Dto.ReqMaxDto;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,10 +36,10 @@ public class FileMonitoringProcessor implements Runnable {
 
                 if (Files.exists(filePath)) {
                     File jsonFile = new File(Const.NEW_REQUEST_FILE_NAME);
-                    List<Req> reqs = mapper.readValue(jsonFile, mapper.getTypeFactory().constructCollectionType(List.class, Req.class));
-                    for (Req req : reqs) {
-                        db.addNewRequest(req);
-                        updateProcessor.sendMessageNewRequest(req);
+                    List<ReqMaxDto> reqMaxDtos = mapper.readValue(jsonFile, mapper.getTypeFactory().constructCollectionType(List.class, ReqMaxDto.class));
+                    for (ReqMaxDto reqMaxDTO : reqMaxDtos) {
+                        db.addNewRequest(reqMaxDTO);
+                        updateProcessor.sendMessageNewRequest(reqMaxDTO);
                     }
                     jsonFile.delete();
                 }

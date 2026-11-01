@@ -2,6 +2,7 @@ package org.example.entity.Contragents;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.Message;
+import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
 import org.example.util.UserUploadSession;

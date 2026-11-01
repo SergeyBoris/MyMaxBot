@@ -5,10 +5,10 @@ import org.example.constants.ConstPfi;
 import org.example.db.MapDB;
 import org.example.entity.Attachment;
 import org.example.entity.Message;
-import org.example.entity.Req;
+import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.Update;
+import org.example.services.BotRequestService;
 import org.example.services.MessageService;
-import org.example.services.RequestService;
 import org.example.util.UserUploadSession;
 
 import java.io.IOException;
@@ -21,14 +21,14 @@ public class UpdateProcessor {
     private final CallbackProcessor callbackProcessor;
     private Map<Long, UserUploadSession> usersSessions;
     private MapDB db;
-    private final RequestService requestService;
+    private final BotRequestService botRequestService;
 
-    public UpdateProcessor(MessageService messageService, CallbackProcessor callbackProcessor, Map<Long, UserUploadSession> usersSessions, MapDB db, RequestService requestService) {
+    public UpdateProcessor(MessageService messageService, CallbackProcessor callbackProcessor, Map<Long, UserUploadSession> usersSessions, MapDB db, BotRequestService botRequestService) {
         this.messageService = messageService;
         this.callbackProcessor = callbackProcessor;
         this.usersSessions = usersSessions;
         this.db = db;
-        this.requestService = requestService;
+        this.botRequestService = botRequestService;
 
     }
 
@@ -61,7 +61,7 @@ public class UpdateProcessor {
                     String nextMessageToUser = userUploadSession.getNextMessageToUser();
                     if(nextMessageToUser !=null && !nextMessageToUser.isEmpty()) {
                         userUploadSession.setText(text);
-                        requestService.specialContragentAction(userUploadSession.getContragent(),nextMessageToUser,userUploadSession);
+                        botRequestService.specialContragentAction(userUploadSession.getContragent(),nextMessageToUser,userUploadSession);
                         messageService.sendSimpleMessage(chatId, "текст приложен\n" + userUploadSession.getNextMessageToUser(), userUploadSession.getNextKeyBoard());
                     }else {
                         messageService.sendSimpleMessage(chatId, "текст приложен \n для отправки нажмите \"готово\"", Const.KEYBOARD_END_PHOTO);
@@ -99,21 +99,21 @@ public class UpdateProcessor {
     }
 
 
-    public void sendMessageNewRequest(Req req) {
-        if (req.getToUsersId() == null || req.getToUsersId().isEmpty()) {
+    public void sendMessageNewRequest(ReqMaxDto reqMaxDTO) {
+        if (reqMaxDTO.getToUsersId() == null || reqMaxDTO.getToUsersId().isEmpty()) {
             Set<Long> allUsers = db.getAllUsers();
             for (Long userId : allUsers) {
-                String text = req.getRequestNumber() + "\n"
-                        + req.getRequestAddress() + "\n"
-                        + req.getRequestText();
+                String text = reqMaxDTO.getRequestNumber() + "\n"
+                        + reqMaxDTO.getRequestAddress() + "\n"
+                        + reqMaxDTO.getRequestText();
                 messageService.sendSimpleMessage(db.getUserChatId(userId), text, Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PBF);
             }
         } else {
-            List<Long> toUsersId = req.getToUsersId();
+            List<Long> toUsersId = reqMaxDTO.getToUsersId();
             for (Long userId : toUsersId) {
-                String text = req.getRequestNumber() + "\n" +
-                        req.getRequestAddress() + "\n" +
-                        req.getRequestText();
+                String text = reqMaxDTO.getRequestNumber() + "\n" +
+                        reqMaxDTO.getRequestAddress() + "\n" +
+                        reqMaxDTO.getRequestText();
                 if (db.getUserChatId(userId) == null) {
                     System.out.println("Пользователь не найден в базе ИД = " + userId);
                 } else {

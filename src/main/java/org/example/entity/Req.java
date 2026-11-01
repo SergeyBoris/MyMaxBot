@@ -1,66 +1,82 @@
 package org.example.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.example.entity.Contragents.Contragent;
+import org.example.entity.mapper.ParamsJsonConverter;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@AllArgsConstructor
-@NoArgsConstructor
+
+@Entity
+@Table(name = "requests", schema = "dbo",
+        uniqueConstraints = @UniqueConstraint(name = "uq_requests_number", columnNames = "request_number"))
 @Getter
 @Setter
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@NoArgsConstructor
 public class Req {
-    @JsonProperty("request_number")
-    private String requestNumber;
-    @JsonProperty("request_text")
-    private String requestText;
-    @JsonProperty("tid")
-    private String TID;
-    @JsonProperty("phone")
-    private String phone;
-    @JsonProperty("priority")
-    private String priority;
-    @JsonProperty("creation_time")
-    private LocalDateTime creationTime;
-    @JsonProperty("request_address")
-    private String requestAddress;
-    @JsonProperty("to_users")
-    private List<Long> toUsersId;
-    @JsonProperty("contragent")
-    private Contragent contragent;
-    @JsonProperty("sla")
-    private String sla;
-    @JsonProperty("params")
-    public Map<String, String> params = new HashMap<>();
-    @JsonIgnore
-    private boolean actual;
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(name = "request_number", nullable = false, length = 50)
+    private String requestNumber;
+
+    @Column(name = "request_text", columnDefinition = "NVARCHAR(MAX)")
+    private String requestText;
+
+    @Column(length = 50)
+    private String tid;
+
+    @Column(length = 50)
+    private String phone;
+
+    @Column(length = 20)
+    private String priority;
+
+    @Column(name = "creation_time", nullable = false)
+    private LocalDateTime creationTime = LocalDateTime.now();
+
+    @Column(name = "request_address", length = 500)
+    private String requestAddress;
+
+    @Column(length = 50)
+    private String sla;
+
+    @Column(length = 50)
+    private String contragent;   // "MKB" / "PBF" — строка, не интерфейс
+
+    @OneToMany(mappedBy = "request",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY)
+    private List<Equipment> equipment = new ArrayList<>();
+
+    public void addEquipment(Equipment eq) {
+        equipment.add(eq);
+        eq.setReq(this);
+    }
+    @Convert(converter = ParamsJsonConverter.class)
+    @Column(name = "params_json", columnDefinition = "NVARCHAR(MAX)")
+    private Map<String, String> params = new HashMap<>();
+
+    public void setParams(String key, String val) {
+        this.params.put(key, val);
+    }
+    public String getParam(String key) {
+        return this.params.get(key);
+    }
     private static void appendIfNotNull(StringBuilder sb, String fieldName, Object value) {
         if (value != null) {
             sb.append("\n").append(fieldName).append(": ").append(value);
         }
-    }
-
-    public void setParams(String key, String val) {
-        params.put(key, val);
-    }
-
-    public void setRequestText(String requestText) {
-        requestText = requestText.replaceAll("\\\\(?![nrtbf\\\\\"/])", "/");
-        this.requestText = requestText;
     }
 
     @Override
@@ -69,10 +85,10 @@ public class Req {
         String formattedDate = creationTime != null ? creationTime.format(formatter) : null;
         StringBuilder textBuilder = new StringBuilder();
         textBuilder.append(requestNumber).append("\n");
-        textBuilder.append(contragent.getContragentName()).append("\n");
+        textBuilder.append(contragent).append("\n");
         textBuilder.append(requestText);
 
-        appendIfNotNull(textBuilder, "TID", TID);
+        appendIfNotNull(textBuilder, "TID", tid);
         appendIfNotNull(textBuilder, "Тел", phone);
         appendIfNotNull(textBuilder, "priority", priority);
         appendIfNotNull(textBuilder, "Время создания", formattedDate);

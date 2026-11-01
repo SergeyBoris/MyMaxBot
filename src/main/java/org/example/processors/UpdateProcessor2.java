@@ -3,7 +3,7 @@ package org.example.processors;
 import org.example.constants.Const;
 import org.example.db.MapDB;
 import org.example.entity.Attachment;
-import org.example.entity.Req;
+import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.Update;
 import org.example.services.MessageService;
 import org.example.services.SaveFileService;
@@ -54,9 +54,9 @@ public class UpdateProcessor2 {
             if (update.getMessage().getBody().getText().equals(Const.BOT_PASSWORD)) {
                 messageService.sendSimpleMessage(chatId, "Вы успешно авторизованы!", null);
                 db.addUser(update.getMessage().getSender().getUserId(), update.getMessage().getRecipient().getChatId());
-                Map<String, Req> allRequests = db.getAllRequests();
+                Map<String, ReqMaxDto> allRequests = db.getAllRequests();
 
-                for (Map.Entry<String, Req> requestEntry : allRequests.entrySet()) {
+                for (Map.Entry<String, ReqMaxDto> requestEntry : allRequests.entrySet()) {
                     String text = requestEntry.getKey() + "\n"
                             + requestEntry.getValue().getRequestAddress() + "\n"
                             + requestEntry.getValue().getRequestText();
@@ -70,12 +70,12 @@ public class UpdateProcessor2 {
         }
     }
 
-    public void sendMessageNewRequest(Req req) {
+    public void sendMessageNewRequest(ReqMaxDto reqMaxDTO) {
         Set<Long> allUsers = db.getAllUsers();
         for (Long userId : allUsers) {
-            String text = req.getRequestNumber() + "\n"
-                    + req.getRequestAddress() + "\n"
-                    + req.getRequestText();
+            String text = reqMaxDTO.getRequestNumber() + "\n"
+                    + reqMaxDTO.getRequestAddress() + "\n"
+                    + reqMaxDTO.getRequestText();
             messageService.sendSimpleMessage(db.getUserChatId(userId), text, null);
         }
     }

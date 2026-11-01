@@ -9,6 +9,7 @@ import okhttp3.*;
 import org.example.constants.Const;
 import org.example.constants.ConstPbf;
 import org.example.db.MapDB;
+import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
 import org.example.services.MessageService;
@@ -198,14 +199,13 @@ public class Pbf implements Contragent {
 //            System.out.println("---");
             req.setRequestNumber(key);
             req.setRequestText(summary + "\n" + description);
-            req.setTID(tid);
+            req.setTid(tid);
             req.setRequestAddress(address);
             req.setPhone(phone);
             req.setPriority(priority);
             req.setCreationTime(ldt);
-            req.setToUsersId(db.getAllUsers().stream().toList());
-            req.setActual(false);
-            req.setContragent(this);
+           // req.setActual(false);
+            req.setContragent(this.name);
             allRequests.add(req);
         });
         Set<String> newNumbers = allRequests.stream()
@@ -235,7 +235,7 @@ public class Pbf implements Contragent {
             messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PBF);
         }
         cashedRequests.put(req.getRequestNumber(), req);
-        log.info("New req {}",req.getRequestNumber());
+        log.info("New reqMaxDTO {}", req.getRequestNumber());
 
     }
 

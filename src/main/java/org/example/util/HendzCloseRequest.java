@@ -11,12 +11,9 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.example.entity.Req;
 
-import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -32,9 +29,9 @@ public class HendzCloseRequest {
             .readTimeout(60, TimeUnit.SECONDS)
             .build();
 
-    public static boolean close(Req req, UserUploadSession userUploadSession,String cookie) {
-        String ticketId = req.params.get("ticketId");;
-        String outgoingId = req.params.get("outgoing");
+    public static boolean close(Req req, UserUploadSession userUploadSession, String cookie) {
+        String ticketId = req.getParam("ticketId");
+        String outgoingId = req.getParam("outgoing");
         LocalDateTime timeNow = LocalDateTime.now();
         DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         DateTimeFormatter formatterTime = DateTimeFormatter.ofPattern("HH:mm");
@@ -49,7 +46,7 @@ public class HendzCloseRequest {
         String workDescription = userUploadSession.getText();;
         List<Path> photos = userUploadSession.getSavedJpgPaths();
         Map<String, Object> sessionParams = userUploadSession.params;
-        Map<String, String> reqParams = req.params;
+        Map<String, String> reqParams = req.getParams();
 //        if (userUploadSession.getStatus().equals("Закрыто")){
 //            params.put("params[731]",workDescription);
 //        }else {

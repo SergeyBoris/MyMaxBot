@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
 import org.example.db.MapDB;
 import org.example.entity.Update;
+import org.example.entity.mapper.ReqMapper;
 import org.example.processors.*;
 import org.example.services.*;
 import org.example.configs.Config;
@@ -45,9 +46,10 @@ public class Main {
             MessageService messageService = new MessageService(client);
             UpdatesService updatesService = new UpdatesService(client, mapper, db, messageService);
             ContragentFactory contragentFactory = new ContragentFactory(messageService, db, emailMonitor);
-            RequestService requestService = new RequestService(contragentFactory, client, mapper);
-            CallbackProcessor callbackProcessor = new CallbackProcessor(messageService, db, usersSessions, requestService);
-            UpdateProcessor updateProcessor = new UpdateProcessor(messageService, callbackProcessor, usersSessions, db, requestService);
+            ReqMapper reqMapper = new ReqMapper(contragentFactory);
+            BotRequestService botRequestService = new BotRequestService(contragentFactory, client, mapper,reqMapper);
+            CallbackProcessor callbackProcessor = new CallbackProcessor(messageService, db, usersSessions, botRequestService);
+            UpdateProcessor updateProcessor = new UpdateProcessor(messageService, callbackProcessor, usersSessions, db, botRequestService);
             FileMonitoringProcessor fileMonitoringProcessor = new FileMonitoringProcessor(db, mapper, updateProcessor);
 
             FindReqProcessor findReqProcessor = new FindReqProcessor(contragentFactory, client, mapper);

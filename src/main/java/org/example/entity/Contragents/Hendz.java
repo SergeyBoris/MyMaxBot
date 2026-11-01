@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
 import org.example.db.MapDB;
+import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
 import org.example.services.EmailMonitorService;
@@ -66,7 +67,7 @@ public class Hendz implements Contragent {
             messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ALL_REQ);
         }
         cashedRequests.put(req.getRequestNumber(), req);
-        log.info("New req {}",req.getRequestNumber());
+        log.info("New reqMaxDTO {}", req.getRequestNumber());
     }
 
     @Override
@@ -94,7 +95,7 @@ public class Hendz implements Contragent {
                     messageService.sendSimpleMessage(db.getUserChatId(user), messageText, Const.KEYBOARD_ALL_REQ);
                 }
                 cashedRequests.remove(req.getRequestNumber());
-                log.info("req HENDS autoclosed {}",req.getRequestNumber());
+                log.info("reqMaxDTO HENDS autoclosed {}", req.getRequestNumber());
             }
 
         } catch (Exception e) {
@@ -146,7 +147,7 @@ public class Hendz implements Contragent {
             }
         }
 
-        req.setContragent(this);
+        req.setContragent(this.name);
         return req;
     }
 }
