@@ -1,10 +1,19 @@
 package org.example.util;
 
-import static org.example.Main.usersSessions;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+@Component
+@RequiredArgsConstructor
+@Getter
 public class UserSessionUtil {
+    private final  Map<Long, UserUploadSession> usersSessions;
 
-    public static void addText(long senderId, String text) {
+    public void addText(long senderId, String text) {
         usersSessions.compute(senderId, (key, session) -> {
             if (session == null) {
                 // Сессии нет — создаём новую
@@ -29,7 +38,7 @@ public class UserSessionUtil {
         });
     }
 
-    public static void changed(long senderId, boolean changed){
+    public void changed(long senderId, boolean changed){
         addText(senderId,"");
         usersSessions.get(senderId).setChanged(changed);
 

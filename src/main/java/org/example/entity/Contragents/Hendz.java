@@ -3,33 +3,39 @@ package org.example.entity.Contragents;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
-import org.example.db.MapDB;
-import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
+import org.example.entity.ReqStatus;
+import org.example.entity.User;
 import org.example.services.EmailMonitorService;
 import org.example.services.MessageService;
+import org.example.spring.service.ReqService;
+import org.example.spring.service.UserService;
 import org.example.util.UserUploadSession;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 import java.net.http.HttpClient;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
+@Service
 public class Hendz implements Contragent {
 
-    private final Map<String, Req> cashedRequests = new ConcurrentHashMap<>();
     private final MessageService messageService;
-    private final MapDB db;
+    private final UserService userService;
+    private final ReqService reqService;
     private EmailMonitorService emailMonitorService;
-    private final String name;
+    private Map<String,Req> notInDbReqs = new ConcurrentHashMap<>();
+    private final String name = "HENDZ";
 
     @Override
     public InlineKeyboard getContragentReqKeyboard() {
@@ -38,7 +44,7 @@ public class Hendz implements Contragent {
 
     @Override
     public List<Req> getAllRequests() {
-        return cashedRequests.values().stream().toList();
+        return reqService.getNewWithPending(name, notInDbReqs.values(),getSorter());
     }
 
     @Override
@@ -62,12 +68,26 @@ public class Hendz implements Contragent {
     }
 
     @Override
-    public void addReqToCash(Req req) {
-        for (Long user : db.getAllUsers()) {
-            messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ALL_REQ);
+    public void addNewReq(Req req, List<Long> allUserIds) {
+
+        if(!reqService.addReq(req)){
+            String error = Const.REQ_ADD_ERROR_MESSAGE;
+            log.error("addNewReq: ошибка заявки {}", req.getRequestNumber() );
+            req.setRequestText(req.getRequestText() + error);
+            notInDbReqs.put(req.getRequestNumber(),req);
         }
-        cashedRequests.put(req.getRequestNumber(), req);
+
+        for (Long getUserChatId : allUserIds) {
+            messageService.sendSimpleMessage(getUserChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_MKB);
+        }
         log.info("New reqMaxDTO {}", req.getRequestNumber());
+
+    }
+
+    @Override
+    public boolean closeReq(Req req, UserUploadSession userUploadSession) {
+        reqService.setReqStatus(req.getRequestNumber(),ReqStatus.CLOSED);
+        return true;
     }
 
     @Override
@@ -76,6 +96,10 @@ public class Hendz implements Contragent {
 
 
         try {
+            List<Long> allUserIds = userService.findAll().stream()
+                    .map(User::getChatId)
+                    .toList();
+
             sb.append(message.getSubject());
 
 
@@ -84,17 +108,17 @@ public class Hendz implements Contragent {
             System.out.println("Новое письмо конец!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             String messageText = sb.toString();
             if (messageText.contains("До истечения регламентного времени")) {
-                for (Long user : db.getAllUsers()) {
-                    messageService.sendSimpleMessage(db.getUserChatId(user), messageText, Const.KEYBOARD_ALL_REQ);
+                for (Long userChatId : allUserIds) {
+                    messageService.sendSimpleMessage(userChatId, messageText, Const.KEYBOARD_ALL_REQ);
                 }
             } else if (messageText.contains("назначена на инженера")) {
-                addReqToCash(parseToReq(message));
+                addNewReq(parseToReq(message),allUserIds);
             } else if (messageText.contains("Задача выполнена") || messageText.contains("Задача ОТМЕНЕНА")) {
                 Req req = parseToReq(message);
-                for (Long user : db.getAllUsers()) {
-                    messageService.sendSimpleMessage(db.getUserChatId(user), messageText, Const.KEYBOARD_ALL_REQ);
+                for (Long userChatId : allUserIds) {
+                    messageService.sendSimpleMessage(userChatId, messageText, Const.KEYBOARD_ALL_REQ);
                 }
-                cashedRequests.remove(req.getRequestNumber());
+                closeReq(req, null);
                 log.info("reqMaxDTO HENDS autoclosed {}", req.getRequestNumber());
             }
 
@@ -149,5 +173,26 @@ public class Hendz implements Contragent {
 
         req.setContragent(this.name);
         return req;
+    }
+
+    @Scheduled(fixedDelayString = "${bot.merge-retry-ms:60000}")
+    public void mergeReqWithDb() {
+        if (notInDbReqs.isEmpty()) return;
+
+        Iterator<Map.Entry<String, Req>> it = notInDbReqs.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, Req> entry = it.next();
+            String number = entry.getKey();
+            Req req = entry.getValue();
+
+            try {
+                if (reqService.addReq(req)) {
+                    it.remove();   // ← успех — убрать из Map
+                    log.info("Досохранена {}", number);
+                }
+            } catch (Exception e) {
+                log.error("Retry {}: {}", number, e.getMessage());
+            }
+        }
     }
 }

@@ -1,20 +1,21 @@
 package org.example.entity.mapper;
 
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import org.example.entity.Contragents.Contragent;
 import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.Req;
+import org.example.entity.ReqStatus;
 import org.example.services.ContragentFactory;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 
-@NoArgsConstructor
 @AllArgsConstructor
+@Component
 public class ReqMapper {
 
-    private ContragentFactory contragentFactory;
+    private final ContragentFactory contragentFactory;
 
     // ============================================
     // ReqMaxDto → Req (entity)
@@ -39,10 +40,18 @@ public class ReqMapper {
             );
         }
 
+
+
         Req entity = new Req();
+
+        if (dto.getStatus() != null && !dto.getStatus().isBlank()) {
+            entity.setStatus(ReqStatus.valueOf(dto.getStatus()));
+        } else {
+            entity.setStatus(ReqStatus.NEW);
+        }
         entity.setRequestNumber(dto.getRequestNumber());
         entity.setRequestText(dto.getRequestText());
-        entity.setTid(dto.getTID());
+        entity.setTid(dto.getTid());
         entity.setPhone(dto.getPhone());
         entity.setPriority(dto.getPriority());
         entity.setCreationTime(dto.getCreationTime() != null
@@ -88,9 +97,12 @@ public class ReqMapper {
         }
 
         ReqMaxDto dto = new ReqMaxDto();
+        dto.setStatus(entity.getStatus() != null
+                ? entity.getStatus().name()
+                : ReqStatus.NEW.name());
         dto.setRequestNumber(entity.getRequestNumber());
         dto.setRequestText(entity.getRequestText());
-        dto.setTID(entity.getTid());
+        dto.setTid(entity.getTid());
         dto.setPhone(entity.getPhone());
         dto.setPriority(entity.getPriority());
         dto.setCreationTime(entity.getCreationTime());

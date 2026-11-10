@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.KeyBoard;
+import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 import java.util.*;

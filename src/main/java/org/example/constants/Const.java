@@ -12,6 +12,7 @@ import java.util.List;
 @Slf4j
 public class Const {
 
+    public static final Long ADMIN_CHAT_ID = 14863801L;
     public static final long UPDATE_BOT_DELAY_TIME;
     public static final long CHECK_NEW_REQUEST_TIME_DELAY;
     public static final String ANSWER_FILE_NAME_PREFIX;
@@ -22,6 +23,7 @@ public class Const {
     public static final String DB_FILE = "bot_data.db"; //todo delete
     public static final String BOT_URL;
     public static final String BOT_TOKEN;
+    public static final String REQ_ADD_ERROR_MESSAGE = "\nОШИБКА ДОБАВЛЕНИЯ ЗАЯВКИ В БАЗУ СМОТРИ ЛОГИ!";
     public static String MAIL_DEBUG;
     public static String MAIL_IMAP_HOST;
     public static int MAIL_IMAP_PORT;
@@ -50,7 +52,7 @@ public class Const {
     public static final InlineKeyboard KEYBOARD_ATTACHMENT_TO_ALL_REQ_PFI = new InlineKeyboard("inline_keyboard", new KeyBoard(List.of(List.of(BTN_CLOSE_REQ,BTN_LOCALIZED,BTN_PNR),ALL_REQ)));
     public static final InlineKeyboard KEYBOARD_ATTACHMENT_TO_PFI_PNR = new InlineKeyboard("inline_keyboard", new KeyBoard(List.of(List.of(BTN_PNR_WORKED,BTN_PNR_NEED_ANOTHER_DRIVE,BTN_PNR_NOT_ALLOWED))));
     public static final InlineKeyboard KEYBOARD_ATTACHMENT_TO_ALL_REQ_PBF = new InlineKeyboard("inline_keyboard", new KeyBoard(List.of(List.of(BTN_CLOSE_REQ,BTN_LOCALIZED),ALL_REQ)));
-    public static final InlineKeyboard KEYBOARD_ATTACHMENT_TO_ALL_REQ_ONLY_CLOSE = new InlineKeyboard("inline_keyboard", new KeyBoard(List.of(List.of(BTN_CLOSE_REQ),ALL_REQ)));
+    public static final InlineKeyboard KEYBOARD_ATTACHMENT_TO_ALL_REQ_MKB = new InlineKeyboard("inline_keyboard", new KeyBoard(List.of(List.of(BTN_CLOSE_REQ),ALL_REQ)));
     public static final InlineKeyboard KEYBOARD_END_PHOTO = new InlineKeyboard("inline_keyboard", new KeyBoard(List.of(List.of(BTN_SEND_ALL_ATTACHMENTS,BTN_CANCEL))));
     public static final InlineKeyboard KEYBOARD_CANCEL = new InlineKeyboard("inline_keyboard", new KeyBoard(List.of(List.of(BTN_CANCEL))));
     static {

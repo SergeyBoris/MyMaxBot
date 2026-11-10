@@ -2,46 +2,45 @@ package org.example.processors;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.entity.Contragents.Contragent;
 import org.example.services.ContragentFactory;
+import org.springframework.stereotype.Service;
 
 import java.net.http.HttpClient;
-import java.util.Map;
+import java.util.List;
+
 @Slf4j
-public class FindReqProcessor implements Runnable {
+@Service
+@RequiredArgsConstructor
+public class FindReqProcessor {
+
     private final ContragentFactory contragentFactory;
     private final HttpClient client;
     private final ObjectMapper mapper;
-    private boolean running = true;
-    public FindReqProcessor(ContragentFactory contragentFactory, HttpClient client, ObjectMapper mapper){
-        this.contragentFactory = contragentFactory;
-        this.client = client;
-        this.mapper = mapper;
-    }
 
-    @Override
-    public void run() {
-        Map<String, Contragent> contragentMap = contragentFactory.getContragentMap();
-        while(running){
-            try {
-                Thread.sleep(2 * 60 * 1000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        contragentMap.forEach((k, v) -> {
-            try {
-
-                v.searchReqRest(client,mapper);
-            }catch (Exception e){
-                log.error("findReq error ",e);
-                e.printStackTrace();
-            }
-        });
+    /**
+     * Один проход опроса всех контрагентов.
+     * Вызывается из @Scheduled каждые N минут.
+     */
+    public void process() {
+        List<Contragent> contragents = contragentFactory.getContragents();
+        if (contragents == null || contragents.isEmpty()) {
+            log.debug("FindReqProcessor: нет контрагентов для опроса");
+            return;
         }
-    }
-    public void shutdown() {
-        running = false;
-        System.out.println("Отправлена остановка потока мониторинга ");
+
+        log.debug("FindReqProcessor: опрос {} контрагентов", contragents.size());
+
+        for (Contragent contragent : contragents) {
+            try {
+                contragent.searchReqRest(client, mapper);
+            } catch (Exception e) {
+                log.error("FindReqProcessor: ошибка контрагента {}: {}",
+                        contragent.getContragentName(), e.getMessage(), e);
+                // не прерываем цикл — остальные контрагенты должны опроситься
+            }
+        }
     }
 }

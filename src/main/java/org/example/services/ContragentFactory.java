@@ -1,40 +1,34 @@
 package org.example.services;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.example.db.MapDB;
-import org.example.entity.Contragents.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.example.entity.Contragents.Contragent;
+import org.springframework.stereotype.Service;
 
+import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+@Slf4j
+@Service
+@RequiredArgsConstructor
 @Getter
 public class ContragentFactory {
-    private final Map<String, Contragent> contragentMap = new HashMap<>();
-    private final MessageService messageService;
-    private final EmailMonitorService emailMonitorService;
 
-    // Регистрируем реализации при создании фабрики
-    public ContragentFactory(MessageService messageService, MapDB db, EmailMonitorService emailMonitorService) {
-        this.messageService = messageService;
-        this.emailMonitorService = emailMonitorService;
-        contragentMap.put("PBF", new Pbf(messageService,db,"PBF"));
-        contragentMap.put("STRIKE", new Strike(messageService,db,emailMonitorService,"STRIKE"));
-        contragentMap.put("HENDZ", new Hendz(messageService,db,emailMonitorService,"HENDZ"));
-        contragentMap.put("PFI", new Pfi(messageService,db,"PFI"));
-        contragentMap.put("MKB", new Mkb(messageService,db,emailMonitorService,"MKB"));
+    private final List<Contragent> contragents;   // Spring внедрит ВСЕ @Component-реализации Contragent
+    private final Map<String, Contragent> byName = new HashMap<>();
+
+    @PostConstruct
+    public void init() {
+        for (Contragent c : contragents) {
+            byName.put(c.getContragentName(), c);
+            log.info("Зарегистрирован контрагент: {}", c.getContragentName());
+        }
     }
 
-
-    /**
-     * Получает реализацию контрагента по его типу
-     */
-    public Contragent getContragent(String contragentType) {
-        Contragent contragent = contragentMap.get(contragentType);
-        if (contragent == null) {
-            throw new IllegalArgumentException(
-                    "Неизвестная реализация контрагента: " + contragentType);
-        }
-        return contragent;
+    public Contragent getContragent(String name) {
+        return byName.get(name);
     }
 }

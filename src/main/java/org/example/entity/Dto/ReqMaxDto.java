@@ -30,7 +30,7 @@ public class ReqMaxDto {
     @JsonProperty("request_text")
     private String requestText;
     @JsonProperty("tid")
-    private String TID;
+    private String tid;
     @JsonProperty("phone")
     private String phone;
     @JsonProperty("priority")
@@ -45,6 +45,8 @@ public class ReqMaxDto {
     private Contragent contragent;
     @JsonProperty("sla")
     private String sla;
+    @JsonProperty("status")
+    private String status;
     @JsonProperty("params")
     public Map<String, String> params = new HashMap<>();
     @JsonProperty("equipment")
@@ -80,7 +82,8 @@ public class ReqMaxDto {
         textBuilder.append(contragent.getContragentName()).append("\n");
         textBuilder.append(requestText);
 
-        appendIfNotNull(textBuilder, "TID", TID);
+
+        appendIfNotNull(textBuilder, "TID", tid);
         appendIfNotNull(textBuilder, "Тел", phone);
         appendIfNotNull(textBuilder, "priority", priority);
         appendIfNotNull(textBuilder, "Время создания", formattedDate);

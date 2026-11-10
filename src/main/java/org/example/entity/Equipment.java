@@ -27,8 +27,8 @@ public class Equipment {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "request_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "request_id", nullable = true)
     @JsonIgnore   // если сайт сериализует в JSON — защита от рекурсии
     private Req req;   // ← было RequestEntity, стало Req
 }

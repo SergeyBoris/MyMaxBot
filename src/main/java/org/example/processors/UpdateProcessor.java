@@ -1,41 +1,70 @@
 package org.example.processors;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
-import org.example.constants.ConstPfi;
-import org.example.db.MapDB;
 import org.example.entity.Attachment;
 import org.example.entity.Message;
-import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.Update;
+import org.example.entity.User;
+import org.example.spring.repo.UserRepo;
 import org.example.services.BotRequestService;
 import org.example.services.MessageService;
 import org.example.util.UserUploadSession;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+@Slf4j
+@Service
+@RequiredArgsConstructor
 public class UpdateProcessor {
     private final MessageService messageService;
     private final CallbackProcessor callbackProcessor;
-    private Map<Long, UserUploadSession> usersSessions;
-    private MapDB db;
+    private final Map<Long, UserUploadSession> usersSessions;
     private final BotRequestService botRequestService;
+    private final UserRepo userRepo;
 
-    public UpdateProcessor(MessageService messageService, CallbackProcessor callbackProcessor, Map<Long, UserUploadSession> usersSessions, MapDB db, BotRequestService botRequestService) {
-        this.messageService = messageService;
-        this.callbackProcessor = callbackProcessor;
-        this.usersSessions = usersSessions;
-        this.db = db;
-        this.botRequestService = botRequestService;
 
-    }
 
     public void startProcess(Update update) throws IOException {
         System.out.println(update);
-        boolean hasPhoto = false;
+        long senderId;
+        if(update.getCallBack() != null) {
+            senderId = update.getCallBack().getUser().getUserBotId();
+        }else {
+            senderId = update.getMessage().getSender().getUserBotId();
+        }
+
+
+        if(update.getMessage().getBody().getText().equals(Const.BOT_PASSWORD)){
+            User user = update.getMessage().getSender();
+            long chatId = update.getMessage().getRecipient().getChatId();
+            user.setChatId(chatId);
+
+            userRepo.save(user);
+        }
         long chatId = update.getMessage().getRecipient().getChatId();
+        // 3. Проверка авторизации
+        Set<Long> allUserBotIds = userRepo.getAllUserBotIds();
+        if (allUserBotIds != null && allUserBotIds.contains(senderId)) {
+            // ✅ авторизован — обрабатываем
+            continueProcess(update, senderId, chatId);
+        } else {
+            // ❌ не авторизован
+            log.info("Пользователь {} не авторизован", senderId);
+             messageService.sendSimpleMessage(chatId, "Вы не авторизованы...", null);
+        }
+
+
+    }
+
+    private void continueProcess(Update update, Long senderId, long chatId) {
+        boolean hasPhoto = false;
+
         Message message = update.getMessage();
         if (update.getMessage().getBody().getAttachments() != null || update.getMessage().getLink() != null) {
             List<Attachment> attachments = update.getMessage().getBody().getAttachments();
@@ -54,18 +83,17 @@ public class UpdateProcessor {
         if (update.getCallBack() == null && !hasPhoto) {
 
             String text = message.getBody().getText();
-            long senderId = message.getSender().getUserId();
             System.out.println("Новое сообщение от " + senderId + ": " + text);
             if (usersSessions.containsKey(senderId)) {
                 UserUploadSession userUploadSession = usersSessions.get(senderId);
-                    String nextMessageToUser = userUploadSession.getNextMessageToUser();
-                    if(nextMessageToUser !=null && !nextMessageToUser.isEmpty()) {
-                        userUploadSession.setText(text);
-                        botRequestService.specialContragentAction(userUploadSession.getContragent(),nextMessageToUser,userUploadSession);
-                        messageService.sendSimpleMessage(chatId, "текст приложен\n" + userUploadSession.getNextMessageToUser(), userUploadSession.getNextKeyBoard());
-                    }else {
-                        messageService.sendSimpleMessage(chatId, "текст приложен \n для отправки нажмите \"готово\"", Const.KEYBOARD_END_PHOTO);
-                    }
+                String nextMessageToUser = userUploadSession.getNextMessageToUser();
+                if (nextMessageToUser != null && !nextMessageToUser.isEmpty()) {
+                    userUploadSession.setText(text);
+                    botRequestService.specialContragentAction(userUploadSession.getContragent(), nextMessageToUser, userUploadSession);
+                    messageService.sendSimpleMessage(chatId, "текст приложен\n" + userUploadSession.getNextMessageToUser(), userUploadSession.getNextKeyBoard());
+                } else {
+                    messageService.sendSimpleMessage(chatId, "текст приложен \n для отправки нажмите \"готово\"", Const.KEYBOARD_END_PHOTO);
+                }
 
             } else {
                 messageService.sendSimpleMessage(chatId, "МЕНЮ", Const.KEYBOARD_ALL_REQ);
@@ -74,7 +102,6 @@ public class UpdateProcessor {
 
         } else if (update.getCallBack() != null && !hasPhoto) {
             String text = message.getBody().getText();
-            long senderId = update.getCallBack().getUser().getUserId();
 //            usersSessions.computeIfPresent(senderId, (key, session) -> {
 //                session.setText(text);
 //                session.setChanged(true);
@@ -85,55 +112,20 @@ public class UpdateProcessor {
 
         } else if (hasPhoto) {
             String text = message.getBody().getText();
-            long senderId = message.getSender().getUserId();
             System.out.println("Новое сообщение c фото " + senderId + ": ");
             usersSessions.computeIfPresent(senderId, (key, session) -> {
-                String oldText = session.getText();
-                session.setText(oldText + text);
-                session.setChanged(true);
+                if (session.getText() == null) {
+                    session.setText(text);
+                } else {
+                    String oldText = session.getText();
+                    session.setText(oldText + text);
+                    session.setChanged(true);
+                }
                 return session;
             });
             callbackProcessor.photoProcess(update);
         }
-
     }
 
 
-    public void sendMessageNewRequest(ReqMaxDto reqMaxDTO) {
-        if (reqMaxDTO.getToUsersId() == null || reqMaxDTO.getToUsersId().isEmpty()) {
-            Set<Long> allUsers = db.getAllUsers();
-            for (Long userId : allUsers) {
-                String text = reqMaxDTO.getRequestNumber() + "\n"
-                        + reqMaxDTO.getRequestAddress() + "\n"
-                        + reqMaxDTO.getRequestText();
-                messageService.sendSimpleMessage(db.getUserChatId(userId), text, Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PBF);
-            }
-        } else {
-            List<Long> toUsersId = reqMaxDTO.getToUsersId();
-            for (Long userId : toUsersId) {
-                String text = reqMaxDTO.getRequestNumber() + "\n" +
-                        reqMaxDTO.getRequestAddress() + "\n" +
-                        reqMaxDTO.getRequestText();
-                if (db.getUserChatId(userId) == null) {
-                    System.out.println("Пользователь не найден в базе ИД = " + userId);
-                } else {
-                    messageService.sendSimpleMessage(db.getUserChatId(userId), text, Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PBF);
-                }
-            }
-
-
-        }
-    }
-    private String userUploadSessionHasSomeUndefinedParam(UserUploadSession userUploadSession){
-        Map<String, Object> params = userUploadSession.getParams();
-        if (params == null) return "";
-
-        for (Map.Entry<String, Object> entry : params.entrySet()) {
-            if (entry.getValue().equals(ConstPfi.NEW_PARAM_INSTANCE)) {
-                return entry.getKey();
-            }
-        }
-        return "";
-
-    }
 }

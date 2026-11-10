@@ -47,7 +47,7 @@ public class SaveFileService {
         }
 
         text = "Имя отправителя: " + sender.getName() + "\n" +
-                "ID Отправителя: " + sender.getUserId() + "\n" +
+                "ID Отправителя: " + sender.getUserBotId() + "\n" +
                 "Статус: " + status + "\n" +
                 "Время получения: " + LocalDateTime.now() + "\n" +
                 text;

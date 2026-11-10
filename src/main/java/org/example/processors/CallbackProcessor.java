@@ -2,37 +2,35 @@ package org.example.processors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
-import org.example.db.MapDB;
 import org.example.entity.Attachment;
 import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.Update;
-import org.example.entity.mapper.ReqMapper;
 import org.example.services.BotRequestService;
 import org.example.services.MessageService;
 import org.example.services.SaveFileService;
 import org.example.util.UserUploadSession;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 @Slf4j
+@Service
 public class CallbackProcessor {
     private final MessageService messageService;
-    private final MapDB db;
     private final BotRequestService botRequestService;
     private final Map<Long, UserUploadSession> usersSessions;
 
-    public CallbackProcessor(MessageService messageService, MapDB db, Map<Long, UserUploadSession> usersSessions, BotRequestService botRequestService) {
+    public CallbackProcessor(MessageService messageService, Map<Long, UserUploadSession> usersSessions, BotRequestService botRequestService) {
         this.messageService = messageService;
-        this.db = db;
         this.usersSessions = usersSessions;
         this.botRequestService = botRequestService;
 
     }
 
     public void process(Update update) {
-        long senderUserId = update.getCallBack().getUser().getUserId();
+        long senderUserId = update.getCallBack().getUser().getUserBotId();
         long senderChatId = update.getMessage().getRecipient().getChatId();
 
 
@@ -43,7 +41,7 @@ public class CallbackProcessor {
                 contragentName = payload.substring("all_requests_".length()).toUpperCase();
                 payload = "all_requests_";
             }
-            long userId = update.getCallBack().getUser().getUserId();
+            long userId = update.getCallBack().getUser().getUserBotId();
             switch (payload) {
                 case "all_requests_" -> {
                     List<ReqMaxDto> allReqMaxDto = botRequestService.getAllRequests(contragentName);
@@ -85,7 +83,7 @@ public class CallbackProcessor {
                 }
 
                 case "end_photo" -> {
-                    if (usersSessions != null && usersSessions.containsKey(update.getCallBack().getUser().getUserId())) {
+                    if (usersSessions != null && usersSessions.containsKey(update.getCallBack().getUser().getUserBotId())) {
                         messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "ОБРАБОТКА...",null);
 
                         UserUploadSession userUploadSession = usersSessions.get(userId);
@@ -131,7 +129,7 @@ public class CallbackProcessor {
                 case "cancel_work_with_req" -> {
                     UserUploadSession userUploadSession = usersSessions.get(userId);
                     log.info("cancel_work_with_req {}",  userUploadSession.getRequestNumber() == null? null : userUploadSession.getRequestNumber());
-                    usersSessions.remove(update.getCallBack().getUser().getUserId());
+                    usersSessions.remove(update.getCallBack().getUser().getUserBotId());
                     messageService.sendSimpleMessage(update.getMessage().getRecipient().getChatId(), "Работа с заявкой прекращена", Const.KEYBOARD_ALL_REQ);
                 }
 //                case "all_requests_pfi" -> {
@@ -192,9 +190,9 @@ public class CallbackProcessor {
 
     public void photoProcess (Update update){
 
-            long userId = update.getMessage().getSender().getUserId();
+            long userId = update.getMessage().getSender().getUserBotId();
             long chatId = update.getMessage().getRecipient().getChatId();
-            System.out.println("Сессия содержитт ключ " + userId + usersSessions.containsKey(update.getMessage().getSender().getUserId()));
+            System.out.println("Сессия содержитт ключ " + userId + usersSessions.containsKey(update.getMessage().getSender().getUserBotId()));
             if (usersSessions.containsKey(userId)) {
 
                 List<Attachment> attachments = update.getMessage().getBody().getAttachments();
@@ -214,9 +212,9 @@ public class CallbackProcessor {
         }
 
         public void textProcess (Update update){
-            long userId = update.getMessage().getSender().getUserId();
+            long userId = update.getMessage().getSender().getUserBotId();
             long chatId = update.getMessage().getRecipient().getChatId();
-            System.out.println("Сессия содержитт ключ " + userId + usersSessions.containsKey(update.getMessage().getSender().getUserId()));
+            System.out.println("Сессия содержитт ключ " + userId + usersSessions.containsKey(update.getMessage().getSender().getUserBotId()));
             if (usersSessions.containsKey(userId)) {
 
             }

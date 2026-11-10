@@ -5,15 +5,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.example.constants.Const;
 import org.example.entity.InlineKeyboard;
+import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+@Service
 @AllArgsConstructor
 public class MessageService {
-    private HttpClient client;
+    private final HttpClient client;
 
     public void sendSimpleMessage(long chatId, String messageText, InlineKeyboard keyBoard) {
         String kbd = "";

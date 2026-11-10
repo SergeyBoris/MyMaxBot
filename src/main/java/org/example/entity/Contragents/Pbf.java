@@ -4,16 +4,22 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.Message;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.example.constants.Const;
 import org.example.constants.ConstPbf;
-import org.example.db.MapDB;
-import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
+import org.example.entity.ReqStatus;
+import org.example.entity.User;
 import org.example.services.MessageService;
+import org.example.spring.service.ReqService;
+import org.example.spring.service.UserService;
+import org.example.util.AllReqCash;
 import org.example.util.UserUploadSession;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,23 +36,27 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
+@Service
+@RequiredArgsConstructor
 public class Pbf implements Contragent {
-    private final Map<String, Req> cashedRequests;
     private final MessageService messageService;
-    private final MapDB db;
-    private final String name;
+    private final String name = "PBF";
     private final OkHttpClient client = new OkHttpClient();
+    private final UserService userService;
+    private final ReqService reqService;
+    private final AllReqCash cash;
+    private final Map<String,Req> notInDbReqs = new ConcurrentHashMap<>();
 
-    public Pbf(MessageService messageService, MapDB db, String name) {
-        this.db = db;
-        this.messageService = messageService;
-        cashedRequests = new ConcurrentHashMap<>();
-        this.name = name;
-    }
 
     @Override
     public InlineKeyboard getContragentReqKeyboard() {
         return Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PBF;
+    }
+
+    @Override
+    public Comparator<Req> getSorter() {
+        return Comparator.comparing(Req::getCreationTime,
+                Comparator.nullsLast(Comparator.naturalOrder()));
     }
 
     @Override
@@ -84,6 +94,15 @@ public class Pbf implements Contragent {
         if (userUploadSession.getText() != null && !userUploadSession.getText().isEmpty() && !userUploadSession.getText().equals("null")) {
             addComment(reqNumber, userUploadSession.getText());
         }
+        Req reqFromDb = reqService.getReqByNumber(reqNumber);
+        if (reqFromDb != null) {
+            reqService.setReqStatus(reqNumber,ReqStatus.CLOSED);
+        }else if(notInDbReqs.containsKey(reqNumber)) {
+            notInDbReqs.get(reqNumber).setStatus(ReqStatus.CLOSED);
+        }else{
+            messageService.sendSimpleMessage(Const.ADMIN_CHAT_ID,"Закрыта заявка которой нет в БД и нет в кеше недобавленых заявок разберись! " + reqNumber, null);
+            return false;
+        }
         return true;
     }
 
@@ -102,23 +121,30 @@ public class Pbf implements Contragent {
 
     @Override
     public List<Req> getAllRequests() {
-
-        return cashedRequests.values().stream().toList();
+        return reqService.getNewWithPending(name, notInDbReqs.values(),getSorter());
     }
 
     @Override
     public Optional<Req> getRequestByNumber(String requestNumber) {
-        return Optional.ofNullable(cashedRequests.get(requestNumber));
+        Optional<Req> reqByNumber = Optional.ofNullable(reqService.getReqByNumber(requestNumber));
+        if (reqByNumber.isEmpty() && notInDbReqs.containsKey(requestNumber)) {
+            reqByNumber = Optional.ofNullable(notInDbReqs.get(requestNumber));
+        }
+        return reqByNumber;
     }
 
     @Override
     public void searchReqRest(HttpClient client, ObjectMapper mapper) {
+        List<Long> allUserIds = userService.findAll().stream()
+                .map(User::getChatId)
+                .toList();
         // Формируем JSON-тело запроса через DTO для надёжности
         String jsonBody = null;
         try {
             jsonBody = createSearchRequestBody(mapper);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            log.error("searchReqRest: ошибка запроса", e);
+            return;   // scheduler продолжит
         }
 
         // Создаём HTTP-запрос
@@ -140,20 +166,20 @@ public class Pbf implements Contragent {
             String responseText = response.body();
 
             //полный ответ
-       //     System.out.println(responseText);
+            //     System.out.println(responseText);
             root = mapper.readTree(responseText);
         } catch (Exception e) {
 
-            log.error("searchReqRest error ", e );
-            throw new RuntimeException(e);
+            log.error("searchReqRest: ошибка запроса", e);
+            return;
         }
 
 
         int total = root.path("total").asInt();
-   //     System.out.println("Всего задач: " + total);
+            System.out.println("Всего задач: " + total);
 // Получаем массив issues
         JsonNode issues = root.path("issues");
-        List<Req> allRequests = new ArrayList<>();
+        Set<Req> allRequestsFromSyte = new HashSet<>();
         // Проходим по всем задачам (если есть)
         issues.forEach(issue -> {
             // Извлекаем нужные поля
@@ -186,17 +212,6 @@ public class Pbf implements Contragent {
             LocalDateTime ldt = odt.toLocalDateTime();
             Req req = new Req();
 
-            // Выводим данные
-//            System.out.println("Номер заявки: " + key);
-//            System.out.println("Краткое описание: " + summary);
-//            System.out.println("Описание: " + description);
-//            System.out.println("TID: " + tid);
-//            System.out.println("address: " + address);
-//            System.out.println("тел: " + phone);
-//            System.out.println("Приоритет: " + priority);
-//            System.out.println("Статус: " + statusName);
-//            System.out.println("Создано: " + odt.format(formattedDate));
-//            System.out.println("---");
             req.setRequestNumber(key);
             req.setRequestText(summary + "\n" + description);
             req.setTid(tid);
@@ -204,21 +219,17 @@ public class Pbf implements Contragent {
             req.setPhone(phone);
             req.setPriority(priority);
             req.setCreationTime(ldt);
-           // req.setActual(false);
+            // req.setActual(false);
             req.setContragent(this.name);
-            allRequests.add(req);
+            allRequestsFromSyte.add(req);
         });
-        Set<String> newNumbers = allRequests.stream()
-                .map(Req::getRequestNumber)
-                .collect(Collectors.toSet());
-        cashedRequests.keySet().retainAll(newNumbers);
-
-        for (Req req : allRequests) {
+//
+        for (Req req : allRequestsFromSyte) {
             String number = req.getRequestNumber();
 
-            if (!cashedRequests.containsKey(number)) {
+            if (!cash.contains(number)) {
                 // Выполняем дополнительный код для НОВЫХ заявок
-                addReqToCash(req);
+                addNewReq(req, allUserIds);
             }
         }
     }
@@ -230,11 +241,18 @@ public class Pbf implements Contragent {
 
 
     @Override
-    public void addReqToCash(Req req) {
-        for (Long user : db.getAllUsers()) {
-            messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PBF);
+    public void addNewReq(Req req, List<Long> allUserIds) {
+
+        if(!reqService.addReq(req)){
+            String error = Const.REQ_ADD_ERROR_MESSAGE;
+            log.error("addNewReq: ошибка заявки {}", req.getRequestNumber() );
+            req.setRequestText(req.getRequestText() + error);
+            notInDbReqs.put(req.getRequestNumber(),req);
         }
-        cashedRequests.put(req.getRequestNumber(), req);
+
+        for (Long getUserChatId : allUserIds) {
+            messageService.sendSimpleMessage(getUserChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PBF);
+        }
         log.info("New reqMaxDTO {}", req.getRequestNumber());
 
     }
@@ -292,6 +310,27 @@ public class Pbf implements Contragent {
             System.out.println("Response: " + response.body().string());
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Scheduled(fixedDelayString = "${bot.merge-retry-ms:60000}")
+    public void mergeReqWithDb() {
+        if (notInDbReqs.isEmpty()) return;
+
+        Iterator<Map.Entry<String, Req>> it = notInDbReqs.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, Req> entry = it.next();
+            String number = entry.getKey();
+            Req req = entry.getValue();
+
+            try {
+                if (reqService.addReq(req)) {
+                    it.remove();   // ← успех — убрать из Map
+                    log.info("Досохранена {}", number);
+                }
+            } catch (Exception e) {
+                log.error("Retry {}: {}", number, e.getMessage());
+            }
         }
     }
 }

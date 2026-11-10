@@ -2,45 +2,58 @@ package org.example.entity.Contragents;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.mail.Message;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
-import org.example.db.MapDB;
-import org.example.entity.Dto.ReqMaxDto;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
+import org.example.entity.ReqStatus;
+import org.example.entity.User;
 import org.example.services.EmailMonitorService;
 import org.example.services.MessageService;
+import org.example.spring.service.ReqService;
+import org.example.spring.service.UserService;
+import org.example.util.AllReqCash;
 import org.example.util.UserUploadSession;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 
 import java.net.http.HttpClient;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Slf4j
-@AllArgsConstructor
+@Service
+@RequiredArgsConstructor
 public class Mkb implements Contragent{
-    private final Map<String, Req> cashedRequests = new ConcurrentHashMap<>();
     private final MessageService messageService;
-    private final MapDB db;
-    private EmailMonitorService emailMonitorService;
-    private final String name;
+    private final AllReqCash cash;
+    private final ReqService reqService;
+    private final UserService userService;
+    private final EmailMonitorService emailMonitorService;
+    private final Map<String,Req> notInDbReqs = new ConcurrentHashMap<>();
+    private final String name = "MKB";
 
     @Override
     public InlineKeyboard getContragentReqKeyboard() {
-        return Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_ONLY_CLOSE;
+        return Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_MKB;
     }
 
     @Override
     public List<Req> getAllRequests() {
-        return cashedRequests.values().stream().toList();
+        return reqService.getNewWithPending(name, notInDbReqs.values(),getSorter());
     }
 
     @Override
     public Optional<Req> getRequestByNumber(String requestNumber) {
-        return Optional.ofNullable(cashedRequests.get(requestNumber));
+        Optional<Req> reqByNumber = Optional.ofNullable(reqService.getReqByNumber(requestNumber));
+        if (reqByNumber.isEmpty() && notInDbReqs.containsKey(requestNumber)) {
+            reqByNumber = Optional.ofNullable(notInDbReqs.get(requestNumber));
+        }
+        return reqByNumber;
     }
 
     @Override
@@ -54,19 +67,27 @@ public class Mkb implements Contragent{
     }
 
     @Override
-    public void addReqToCash(Req req) {
-        for (Long user : db.getAllUsers()) {
-            messageService.sendSimpleMessage(db.getUserChatId(user), req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_ONLY_CLOSE);
+    public void addNewReq(Req req,List<Long> allUserIds) {
+        if (!reqService.addReq(req)) {
+            String error = Const.REQ_ADD_ERROR_MESSAGE;
+            log.error("addNewReq: ошибка заявки {}", req.getRequestNumber());
+            req.setRequestText(req.getRequestText() + error);
+            notInDbReqs.put(req.getRequestNumber(), req);
         }
 
-        cashedRequests.put(req.getRequestNumber(), req);
-        log.info("New req {}", req.getRequestNumber());
+        for (Long getUserChatId : allUserIds) {
+            messageService.sendSimpleMessage(getUserChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_MKB);
+        }
+        log.info("New reqMaxDTO {}", req.getRequestNumber());
     }
 
     @Override
     public void processNewEmail(Message message) {
-
+        List<Req> allRequestsFromSyte = new LinkedList<>();
         try {
+            List<Long> allUserIds = userService.findAll().stream()
+                    .map(User::getChatId)
+                    .toList();
 
             String messageBody = emailMonitorService.getTextForLlm(message);
             System.out.println("!!!!!!!!!!!!!!!!!!!!!!");
@@ -81,25 +102,44 @@ public class Mkb implements Contragent{
                 req.setCreationTime(LocalDateTime.now());
                 req.setTid(request.get("№ПТ"));
                 req.setParams("Режим работы",request.get("Режим работы"));
-                if (!cashedRequests.containsKey(req.getRequestNumber())) {
+
                     // Выполняем дополнительный код для НОВЫХ заявок
-                    addReqToCash(req);
+                allRequestsFromSyte.add(req);
+
+            }
+            for (Req req : allRequestsFromSyte) {
+                String number = req.getRequestNumber();
+
+                if (!cash.contains(number)) {
+                    // Выполняем дополнительный код для НОВЫХ заявок
+                    addNewReq(req, allUserIds);
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.error("Mkb.processNewEmail: ошибка обработки письма: {}", e.getMessage(), e);
         }
 
     }
 
     @Override
     public void specialContragentAction(String action, UserUploadSession userUploadSession) {
-
+        userUploadSession.setNextMessageToUser("Напишите текст нажмите готово", Const.KEYBOARD_END_PHOTO);
     }
 
     @Override
     public boolean closeReq(Req req, UserUploadSession userUploadSession) {
-        return Contragent.super.closeReq(req, userUploadSession);
+        String reqNumber = req.getRequestNumber();
+        //todo отправка письма
+        Req reqFromDb = reqService.getReqByNumber(reqNumber);
+        if (reqFromDb != null) {
+            reqService.setReqStatus(reqNumber, ReqStatus.CLOSED);
+        }else if(notInDbReqs.containsKey(reqNumber)) {
+            notInDbReqs.get(reqNumber).setStatus(ReqStatus.CLOSED);
+        }else{
+            messageService.sendSimpleMessage(Const.ADMIN_CHAT_ID,"Закрыта заявка которой нет в БД и нет в кеше недобавленых заявок разберись! " + reqNumber, null);
+            return false;
+        }
+        return true;
     }
 
     private List<Map<String, String>> parseTasksNamed(String text) {
@@ -134,5 +174,25 @@ public class Mkb implements Contragent{
             tasks.add(task);
         }
         return tasks;
+    }
+    @Scheduled(fixedDelayString = "${bot.merge-retry-ms:60000}")
+    public void mergeReqWithDb() {
+        if (notInDbReqs.isEmpty()) return;
+
+        Iterator<Map.Entry<String, Req>> it = notInDbReqs.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, Req> entry = it.next();
+            String number = entry.getKey();
+            Req req = entry.getValue();
+
+            try {
+                if (reqService.addReq(req)) {
+                    it.remove();   // ← успех — убрать из Map
+                    log.info("Досохранена {}", number);
+                }
+            } catch (Exception e) {
+                log.error("Retry {}: {}", number, e.getMessage());
+            }
+        }
     }
 }

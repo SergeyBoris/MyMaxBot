@@ -8,10 +8,7 @@ import org.example.entity.mapper.ParamsJsonConverter;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @Entity
@@ -51,11 +48,15 @@ public class Req {
     private String sla;
 
     @Column(length = 50)
-    private String contragent;   // "MKB" / "PBF" — строка, не интерфейс
+    private String contragent;
 
-    @OneToMany(mappedBy = "request",
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 30)
+    private ReqStatus status = ReqStatus.NEW;
+
+    @OneToMany(mappedBy = "req",
             cascade = CascadeType.ALL,
-            orphanRemoval = true,
+            orphanRemoval = false,
             fetch = FetchType.LAZY)
     private List<Equipment> equipment = new ArrayList<>();
 
@@ -80,6 +81,18 @@ public class Req {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Req req)) return false;
+        return Objects.equals(requestNumber, req.requestNumber);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(requestNumber);
+    }
+
+    @Override
     public String toString() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
         String formattedDate = creationTime != null ? creationTime.format(formatter) : null;
@@ -88,7 +101,9 @@ public class Req {
         textBuilder.append(contragent).append("\n");
         textBuilder.append(requestText);
 
+        appendIfNotNull(textBuilder, "БАНК", params.get("владелец"));
         appendIfNotNull(textBuilder, "TID", tid);
+        appendIfNotNull(textBuilder, "Клиент", params.get("клиент"));
         appendIfNotNull(textBuilder, "Тел", phone);
         appendIfNotNull(textBuilder, "priority", priority);
         appendIfNotNull(textBuilder, "Время создания", formattedDate);
