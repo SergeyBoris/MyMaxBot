@@ -2,6 +2,7 @@ package org.example.services;
 
 import jakarta.mail.*;
 import jakarta.mail.search.FlagTerm;
+import lombok.Getter;
 import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
 import org.example.constants.Const;
@@ -17,6 +18,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 @Service
+@Getter
 public class EmailMonitorService {
 
     private Store store;

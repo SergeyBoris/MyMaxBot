@@ -16,7 +16,11 @@ public class ConfigLoader {
 
         File file = new File(configFile);
         if (!file.exists()) {
-            throw new FileNotFoundException("Конфигурационный файл не найден: " + configFile);
+            // если не нашли рядом с рабочей папкой — ищем рядом с exe
+            String exe = System.getProperty("jpackage.app-path");
+            if (exe != null) {
+                file = new File(new File(exe).getParentFile(), configFile);
+            }
         }
 
         try {

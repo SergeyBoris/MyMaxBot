@@ -60,6 +60,7 @@ public class ReqMapper {
         entity.setRequestAddress(dto.getRequestAddress());
         entity.setSla(dto.getSla());
         entity.setContragent(contragentName);
+        entity.setParams(dto.getParams());
 
         return entity;
     }
@@ -109,7 +110,7 @@ public class ReqMapper {
         dto.setRequestAddress(entity.getRequestAddress());
         dto.setSla(entity.getSla());
         dto.setContragent(contragent);
-        dto.setParams(new HashMap<>());
+        dto.setParams(entity.getParams());
 
         return dto;
     }

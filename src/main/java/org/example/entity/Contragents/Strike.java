@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.constants.Const;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
+import org.example.entity.ReqStatus;
 import org.example.entity.User;
 import org.example.services.EmailMonitorService;
 import org.example.services.MessageService;
@@ -33,10 +34,14 @@ public class Strike implements Contragent {
     private final MessageService messageService;
     private final UserService userService;
     private final EmailMonitorService emailMonitorService;
-    private final AllReqCash cash;
     private final ReqService reqService;
-    private Map<String,Req> notInDbReqs = new ConcurrentHashMap<>();
+    private final Map<String, Req> cashNewReq = new ConcurrentHashMap<>();
     private final String name = "STRIKE";
+
+    @Override
+    public void initCash() {
+
+    }
 
     @Override
     public InlineKeyboard getContragentReqKeyboard() {
@@ -50,9 +55,12 @@ public class Strike implements Contragent {
 
     @Override
     public List<Req> getAllRequests() {
-        return reqService.getNewWithPending(name, notInDbReqs.values(),getSorter());
+        return reqService.findByStatusesAndContragent(List.of(ReqStatus.NEW,ReqStatus.CLOSED_BY_ENGINEER),name)
+                .values()
+                .stream()
+                .sorted(getSorter())
+                .toList();
     }
-
     @Override
     public Optional<Req> getRequestByNumber(String requestNumber) {
         return Optional.ofNullable(cashedRequests.get(requestNumber));
@@ -64,7 +72,7 @@ public class Strike implements Contragent {
     }
 
     @Override
-    public void processNewEmail(Message message) {
+    public void processNewEmail(Message message, Long uid) {
         StringBuilder sb = new StringBuilder();
 
 
@@ -95,24 +103,5 @@ public class Strike implements Contragent {
 
     }
 
-    @Scheduled(fixedDelayString = "${bot.merge-retry-ms:60000}")
-    public void mergeReqWithDb() {
-        if (notInDbReqs.isEmpty()) return;
 
-        Iterator<Map.Entry<String, Req>> it = notInDbReqs.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<String, Req> entry = it.next();
-            String number = entry.getKey();
-            Req req = entry.getValue();
-
-            try {
-                if (reqService.addReq(req)) {
-                    it.remove();   // ← успех — убрать из Map
-                    log.info("Досохранена {}", number);
-                }
-            } catch (Exception e) {
-                log.error("Retry {}: {}", number, e.getMessage());
-            }
-        }
-    }
 }

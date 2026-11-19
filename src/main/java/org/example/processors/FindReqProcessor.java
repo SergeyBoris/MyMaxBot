@@ -6,10 +6,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.entity.Contragents.Contragent;
 import org.example.services.ContragentFactory;
+import org.example.util.AllReqCash;
 import org.springframework.stereotype.Service;
 
 import java.net.http.HttpClient;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -19,6 +21,7 @@ public class FindReqProcessor {
     private final ContragentFactory contragentFactory;
     private final HttpClient client;
     private final ObjectMapper mapper;
+    private final AllReqCash allReqCash;
 
     /**
      * Один проход опроса всех контрагентов.
@@ -30,7 +33,6 @@ public class FindReqProcessor {
             log.debug("FindReqProcessor: нет контрагентов для опроса");
             return;
         }
-
         log.debug("FindReqProcessor: опрос {} контрагентов", contragents.size());
 
         for (Contragent contragent : contragents) {

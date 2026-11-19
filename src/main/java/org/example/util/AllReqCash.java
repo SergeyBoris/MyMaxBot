@@ -4,11 +4,13 @@ import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.entity.ReqStatus;
 import org.example.spring.repo.RequestRepo;
 import org.example.spring.service.ReqService;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,8 +25,13 @@ public class AllReqCash {
 
     @PostConstruct
     protected void init() {
-        cash.addAll(requestRepo.findAllRequestNumbers());
+        cash.addAll(requestRepo.findAllRequestNumbersByStatuses(List.of(ReqStatus.NEW,ReqStatus.CLOSED_BY_ENGINEER)));
         log.info("Кэш загружен: {}", cash.size());
+    }
+
+    public Set<String> initNewCash() {
+        init();
+        return cash;
     }
 
     public boolean contains(String number) {

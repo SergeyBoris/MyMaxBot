@@ -10,6 +10,8 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.example.entity.Req;
+import org.example.entity.ReqStatus;
+import org.example.spring.service.ReqService;
 
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -29,7 +31,7 @@ public class HendzCloseRequest {
             .readTimeout(60, TimeUnit.SECONDS)
             .build();
 
-    public static boolean close(Req req, UserUploadSession userUploadSession, String cookie) {
+    public static boolean close(Req req, UserUploadSession userUploadSession, String cookie, ReqService reqService) {
         String ticketId = req.getParam("ticketId");
         String outgoingId = req.getParam("outgoing");
         LocalDateTime timeNow = LocalDateTime.now();
@@ -43,7 +45,8 @@ public class HendzCloseRequest {
         String closeMode;
         String testWorkDescription = userUploadSession.getText();
         System.out.println("testWorkDescription = " + testWorkDescription);
-        String workDescription = userUploadSession.getText();;
+        String workDescription = userUploadSession.getText();
+        ;
         List<Path> photos = userUploadSession.getSavedJpgPaths();
         Map<String, Object> sessionParams = userUploadSession.params;
         Map<String, String> reqParams = req.getParams();
@@ -65,35 +68,34 @@ public class HendzCloseRequest {
                 .addFormDataPart("arrival_time", arrivalTime)
                 .addFormDataPart("begin_time", arrivalTime)
                 .addFormDataPart("end_time", endTime);
-          //      .addFormDataPart("task_uid", "83");           // ← ID задачи (83-SLM, 88-осмотр перед абонементом, 121- подготовка к демонтажу )
+        //      .addFormDataPart("task_uid", "83");           // ← ID задачи (83-SLM, 88-осмотр перед абонементом, 121- подготовка к демонтажу )
         log.info("PFI CLOSED PARAMS:");
-        log.info("work_date {}",workDate);
-        log.info("arrival_time {}",arrivalTime);
-        log.info("begin_time {}",beginTime);
-        log.info("end_time {}",endTime);
-
-        reqParams.forEach((k,v) -> {
-            builder.addFormDataPart(k,v.toString());
-            log.info("closed PFI param: {} - {}", k, v.toString());
+        log.info("work_date {}", workDate);
+        log.info("arrival_time {}", arrivalTime);
+        log.info("begin_time {}", beginTime);
+        log.info("end_time {}", endTime);
+        reqParams.forEach((k, v) -> {
+            builder.addFormDataPart(k, v.toString());
+            log.info("closed PFI from Req param: {} - {}", k, v.toString());
         });
-        sessionParams.forEach( (k,v) -> {
+        sessionParams.forEach((k, v) -> {
 
 
-            if ("params[593]".equals(k) && v == null){
-                v= "000000";
+            if ("params[593]".equals(k) && v == null) {
+                v = "000000";
             }
 
             if ("params[591]".equals(k)) {
-                if (v==null || !v.toString().matches("2600000\\d{6}")){
+                if (v == null || !v.toString().matches("2600000\\d{6}")) {
                     v = "2600000000000";
                 }
             }
 
-            if (v == null){
+            if (v == null) {
                 v = "000000";
             }
             builder.addFormDataPart(k, v.toString());
-            log.info("closed PFI param: {} - {}", k, v.toString());
+            log.info("closed PFI from session param: {} - {}", k, v.toString());
 
         });
         // matrix_ctx_device поля (все возможные узлы)
@@ -126,19 +128,24 @@ public class HendzCloseRequest {
         try (Response response = client.newCall(request).execute()) {
             ObjectMapper mapper = new ObjectMapper();
             String responseBody = response.body() != null ? response.body().string() : "";
+            log.debug("closeReq: HTTP {}, body: {}",
+                    response.code(),
+                    response.body());
             JsonNode json = mapper.readTree(responseBody);
             System.out.println("Весь JSON: " + json.toPrettyString());
-            log.info("PFI response Json: {}",json.toPrettyString());
+            log.info("PFI response Json: {}", json.toPrettyString());
             log.info("ResponseBody: {}", responseBody);
-            if (json.has("pfiValidationErrorMap")){
+            reqService.setReqStatus(req.getRequestNumber(), ReqStatus.CLOSED_BY_ENGINEER);
+
+            if (json.has("pfiValidationErrorMap")) {
                 String errorJson = json.get("pfiValidationErrorMap").toPrettyString();
-                log.info("response fom pfi error: {}",errorJson);
+                log.info("response fom pfi error: {}", errorJson);
                 return !response.isSuccessful();
-            }else {
+            } else {
                 log.info("response from pfi OK");
                 return response.isSuccessful();
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error(e.getMessage());
             throw new RuntimeException(e);
         }
@@ -308,7 +315,6 @@ public class HendzCloseRequest {
         builder.addFormDataPart("matrix_ctx_device[\\2040]", "767");
         builder.addFormDataPart("matrix_ctx_device[\\2039]", "676");
     }
-
 
 
 }

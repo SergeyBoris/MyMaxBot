@@ -1,6 +1,7 @@
 package org.example.entity.Contragents;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
@@ -33,10 +34,15 @@ public class Hendz implements Contragent {
     private final MessageService messageService;
     private final UserService userService;
     private final ReqService reqService;
-    private EmailMonitorService emailMonitorService;
-    private Map<String,Req> notInDbReqs = new ConcurrentHashMap<>();
+    private final EmailMonitorService emailMonitorService;
     private final String name = "HENDZ";
+    private final Map<String, Req> cashNewReq = new ConcurrentHashMap<>();
 
+    @Override
+    @PostConstruct
+    public void initCash() {
+
+    }
     @Override
     public InlineKeyboard getContragentReqKeyboard() {
         return Const.KEYBOARD_ALL_REQ;
@@ -44,7 +50,11 @@ public class Hendz implements Contragent {
 
     @Override
     public List<Req> getAllRequests() {
-        return reqService.getNewWithPending(name, notInDbReqs.values(),getSorter());
+        return reqService.findByStatusesAndContragent(List.of(ReqStatus.NEW,ReqStatus.CLOSED_BY_ENGINEER),name)
+                .values()
+                .stream()
+                .sorted(getSorter())
+                .toList();
     }
 
     @Override
@@ -73,8 +83,7 @@ public class Hendz implements Contragent {
         if(!reqService.addReq(req)){
             String error = Const.REQ_ADD_ERROR_MESSAGE;
             log.error("addNewReq: ошибка заявки {}", req.getRequestNumber() );
-            req.setRequestText(req.getRequestText() + error);
-            notInDbReqs.put(req.getRequestNumber(),req);
+            messageService.sendSimpleMessage(Const.ADMIN_CHAT_ID, req.toString() + error, null);
         }
 
         for (Long getUserChatId : allUserIds) {
@@ -91,7 +100,7 @@ public class Hendz implements Contragent {
     }
 
     @Override
-    public void processNewEmail(Message message) {
+    public void processNewEmail(Message message, Long uid) {
         StringBuilder sb = new StringBuilder();
 
 
@@ -175,24 +184,5 @@ public class Hendz implements Contragent {
         return req;
     }
 
-    @Scheduled(fixedDelayString = "${bot.merge-retry-ms:60000}")
-    public void mergeReqWithDb() {
-        if (notInDbReqs.isEmpty()) return;
 
-        Iterator<Map.Entry<String, Req>> it = notInDbReqs.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<String, Req> entry = it.next();
-            String number = entry.getKey();
-            Req req = entry.getValue();
-
-            try {
-                if (reqService.addReq(req)) {
-                    it.remove();   // ← успех — убрать из Map
-                    log.info("Досохранена {}", number);
-                }
-            } catch (Exception e) {
-                log.error("Retry {}: {}", number, e.getMessage());
-            }
-        }
-    }
 }

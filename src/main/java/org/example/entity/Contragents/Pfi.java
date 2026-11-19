@@ -2,6 +2,7 @@ package org.example.entity.Contragents;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import jakarta.mail.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,18 +10,17 @@ import org.example.constants.Const;
 import org.example.constants.ConstPfi;
 import org.example.entity.InlineKeyboard;
 import org.example.entity.Req;
+import org.example.entity.ReqStatus;
 import org.example.entity.User;
 import org.example.services.MessageService;
 import org.example.spring.service.ReqService;
 import org.example.spring.service.UserService;
-import org.example.util.AllReqCash;
 import org.example.util.HendzCloseRequest;
 import org.example.util.UserUploadSession;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -35,7 +35,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -45,16 +44,28 @@ public class Pfi implements Contragent {
     public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 YaBrowser/26.4.0.0 Safari/537.36";
     public static final String CONTENT_TYPE = "application/x-www-form-urlencoded; charset=UTF-8";
 
+
     private final MessageService messageService;
     private final HttpClient client;
     private final ObjectMapper mapper;
     private final UserService userService;
     private final ReqService reqService;
     private String cookie;
-    private final AllReqCash cash;
-    private Map<String,Req> notInDbReqs = new ConcurrentHashMap<>();
+    private final Map<String, Req> cashNewReq = new ConcurrentHashMap<>();
     private final String name = "PFI";
 
+    @Override
+    @PostConstruct
+    public void initCash() {
+        try {
+            cashNewReq.putAll(reqService.findByStatusesAndContragent(
+                    List.of(ReqStatus.NEW, ReqStatus.CLOSED_BY_ENGINEER), name));
+            log.info("[{}] Кеш инициализирован: {} заявок", name, cashNewReq.size());
+        } catch (Exception e) {
+            log.error("[{}] Не удалось загрузить кеш при старте: {}", name, e.getMessage(), e);
+            // работаем с пустым кешем — наполнится при первом успешном searchReqRest
+        }
+    }
 
     @Override
     public InlineKeyboard getContragentReqKeyboard() {
@@ -63,23 +74,21 @@ public class Pfi implements Contragent {
 
     @Override
     public List<Req> getAllRequests() {
-        return reqService.getNewWithPending(name, notInDbReqs.values(),getSorter());
+        return cashNewReq.values().stream().sorted(getSorter()).toList();
     }
+
 
     @Override
     public Optional<Req> getRequestByNumber(String requestNumber) {
-        Optional<Req> reqByNumber = Optional.ofNullable(reqService.getReqByNumber(requestNumber));
-        if (reqByNumber.isEmpty() && notInDbReqs.containsKey(requestNumber)) {
-            reqByNumber = Optional.ofNullable(notInDbReqs.get(requestNumber));
-        }
-        return reqByNumber;
+
+        return Optional.ofNullable(cashNewReq.get(requestNumber));
     }
 
     @Override
     public boolean closeReq(Req req, UserUploadSession userUploadSession) {
 
 
-        return HendzCloseRequest.close(req, userUploadSession, cookie);
+        return HendzCloseRequest.close(req, userUploadSession, cookie, reqService);
     }
 
     @Override
@@ -103,7 +112,7 @@ public class Pfi implements Contragent {
                 .map(User::getChatId)
                 .toList();
         // 2. Основной запрос
-        List<Req> allRequestsFromSyte = new ArrayList<>();
+        Map<String,Req> allRequestsFromSyte = new LinkedHashMap<>();
         System.out.println("ПФИ ИЩЕТ НАЧАЛО");
 
         try {
@@ -154,17 +163,42 @@ public class Pfi implements Contragent {
                 return;
             }
 
-            allRequestsFromSyte = parseReq(response.body());
+            for (Req req : parseReq(response.body())) {
+                allRequestsFromSyte.put(req.getRequestNumber(),req);
+            }
 
         } catch (Exception e) {
             log.error("Pfi: ошибка запроса: {}", e.getMessage(), e);
             return;   // ← не пробрасывать RuntimeException — иначе FindReqProcessor ловит, но лучше skip
         }
 
-        for (Req req : allRequestsFromSyte) {
+        // сверяеем кеш и заявки с сайта, если в кеше есть а с сайта нет, помечаем в кеше и в базе как отменена
+        Iterator<Map.Entry<String, Req>> it = cashNewReq.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, Req> entry = it.next();
+            String number = entry.getKey();
+            Req cached = entry.getValue();
+
+            if (allRequestsFromSyte.containsKey(number)) continue;   // ещё на сайте
+
+            try {
+                if (cached.getStatus() == ReqStatus.NEW) {
+                    reqService.setReqStatus(number, ReqStatus.CANCELLED);
+                    log.info("[{}] {} → CANCELLED (пропала с сайта)", name, number);
+                } else {
+                    log.info("[{}] {} пропала с сайта, статус {} — убираем из кеша",
+                            name, number, cached.getStatus());
+                }
+            } catch (Exception e) {
+                log.error("[{}] не удалось обновить {}: {}", name, number, e.getMessage());
+            }
+            it.remove();   // ← удаляем ВСЕГДА, при любом статусе
+        }
+
+        for (Req req : allRequestsFromSyte.values()) {
             String number = req.getRequestNumber();
 
-            if (!cash.contains(number)) {
+            if (!cashNewReq.containsKey(number)) {
                 // Выполняем дополнительный код для НОВЫХ заявок
                 addNewReq(req, allUserIds);
             }
@@ -174,14 +208,11 @@ public class Pfi implements Contragent {
 
     @Override
     public void addNewReq(Req req, List<Long> allUserIds) {
-        for (Long userChatId : allUserIds) {
-            messageService.sendSimpleMessage(userChatId, req.toString(), Const.KEYBOARD_ATTACHMENT_TO_ALL_REQ_PFI);
-        }
-        if(!reqService.addReq(req)){
-            String error = Const.REQ_ADD_ERROR_MESSAGE;
-            log.error("addNewReq: ошибка заявки {}", req.getRequestNumber() );
-            req.setRequestText(req.getRequestText() + error);
-            notInDbReqs.put(req.getRequestNumber(),req);
+        req.setStatus(ReqStatus.NEW);
+        cashNewReq.put(req.getRequestNumber(), req);
+        if (!reqService.addReq(req)) {
+            messageService.sendSimpleMessage(Const.ADMIN_CHAT_ID, req.toString() + Const.REQ_ADD_ERROR_MESSAGE, null);
+            log.error("addNewReq: ошибка заявки {}", req.getRequestNumber());
         }
 
         for (Long getUserChatId : allUserIds) {
@@ -190,9 +221,8 @@ public class Pfi implements Contragent {
         log.info("New reqMaxDTO {}", req.getRequestNumber());
 
     }
-
     @Override
-    public void processNewEmail(Message message) {
+    public void processNewEmail(Message message, Long uid) {
 
     }
 
@@ -464,25 +494,7 @@ public class Pfi implements Contragent {
         throw new RuntimeException("Не найден " + fieldName);
     }
 
-    @Scheduled(fixedDelayString = "${bot.merge-retry-ms:60000}")
-    public void mergeReqWithDb() {
-        if (notInDbReqs.isEmpty()) return;
 
-        Iterator<Map.Entry<String, Req>> it = notInDbReqs.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<String, Req> entry = it.next();
-            String number = entry.getKey();
-            Req req = entry.getValue();
 
-            try {
-                if (reqService.addReq(req)) {
-                    it.remove();   // ← успех — убрать из Map
-                    log.info("Досохранена {}", number);
-                }
-            } catch (Exception e) {
-                log.error("Retry {}: {}", number, e.getMessage());
-            }
-        }
-    }
 
 }

@@ -101,6 +101,7 @@ public class Req {
         textBuilder.append(contragent).append("\n");
         textBuilder.append(requestText);
 
+        appendIfNotNull(textBuilder, "SN ADM", params.get("params[591]"));
         appendIfNotNull(textBuilder, "БАНК", params.get("владелец"));
         appendIfNotNull(textBuilder, "TID", tid);
         appendIfNotNull(textBuilder, "Клиент", params.get("клиент"));

@@ -15,7 +15,7 @@ public class FindReqScheduler {
 
     @Scheduled(fixedDelayString = "${bot.find-req-delay-ms:60000}")
     public void run() {
-        log.debug("⏰ FindReqScheduler: старт опроса");
+        //log.debug("⏰ FindReqScheduler: старт опроса");
         try {
             findReqProcessor.process();
         } catch (Exception e) {

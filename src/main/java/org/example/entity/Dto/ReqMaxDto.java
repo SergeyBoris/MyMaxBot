@@ -82,8 +82,10 @@ public class ReqMaxDto {
         textBuilder.append(contragent.getContragentName()).append("\n");
         textBuilder.append(requestText);
 
-
+        appendIfNotNull(textBuilder, "SN ADM", params.get("params[591]"));
+        appendIfNotNull(textBuilder, "БАНК", params.get("владелец"));
         appendIfNotNull(textBuilder, "TID", tid);
+        appendIfNotNull(textBuilder, "Клиент", params.get("клиент"));
         appendIfNotNull(textBuilder, "Тел", phone);
         appendIfNotNull(textBuilder, "priority", priority);
         appendIfNotNull(textBuilder, "Время создания", formattedDate);

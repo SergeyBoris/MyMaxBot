@@ -26,8 +26,8 @@ public interface  RequestRepo extends JpaRepository<Req, Integer> {
             "WHERE e.serialNumber = :sn ORDER BY r.creationTime DESC")
     List<Req> findHistoryBySerial(@Param("sn") String serial);
 
-    @Query("SELECT r.requestNumber FROM Req r")
-    Set<String> findAllRequestNumbers();
+    @Query("SELECT r.requestNumber FROM Req r WHERE r.status IN :status" )
+    Set<String> findAllRequestNumbers(@Param("status") ReqStatus status);
 
     @Query("SELECT r.requestNumber FROM Req r WHERE r.status IN :statuses")
     Set<String> findAllRequestNumbersByStatuses(@Param("statuses") Collection<ReqStatus> statuses);
@@ -36,5 +36,16 @@ public interface  RequestRepo extends JpaRepository<Req, Integer> {
             "AND r.status IN :statuses ORDER BY r.sla DESC NULLS LAST")
     List<Req> findByContragentAndStatuses(@Param("c") String c,
                                           @Param("statuses") Collection<ReqStatus> statuses);
+
+    @Query("""
+    SELECT r FROM Req r
+    WHERE r.status IN :statuses
+      AND r.contragent = :contragent
+    ORDER BY r.creationTime DESC
+    """)
+    List<Req> findByStatusesAndContragent(
+            @Param("statuses") List<ReqStatus> statuses,
+            @Param("contragent") String contragent
+    );
 
 }

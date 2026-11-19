@@ -3,6 +3,7 @@ package org.example.entity.Contragents;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import jakarta.mail.Message;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,9 +17,7 @@ import org.example.entity.User;
 import org.example.services.MessageService;
 import org.example.spring.service.ReqService;
 import org.example.spring.service.UserService;
-import org.example.util.AllReqCash;
 import org.example.util.UserUploadSession;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -33,7 +32,6 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -44,9 +42,21 @@ public class Pbf implements Contragent {
     private final OkHttpClient client = new OkHttpClient();
     private final UserService userService;
     private final ReqService reqService;
-    private final AllReqCash cash;
-    private final Map<String,Req> notInDbReqs = new ConcurrentHashMap<>();
+    private final Map<String, Req> cashNewReq = new ConcurrentHashMap<>();
 
+
+    @Override
+    @PostConstruct
+    public void initCash() {
+        try {
+            cashNewReq.putAll(reqService.findByStatusesAndContragent(
+                    List.of(ReqStatus.NEW, ReqStatus.CLOSED_BY_ENGINEER), name));
+            log.info("[{}] Кеш инициализирован: {} заявок", name, cashNewReq.size());
+        } catch (Exception e) {
+            log.error("[{}] Не удалось загрузить кеш при старте: {}", name, e.getMessage(), e);
+            // работаем с пустым кешем — наполнится при первом успешном searchReqRest
+        }
+    }
 
     @Override
     public InlineKeyboard getContragentReqKeyboard() {
@@ -94,15 +104,18 @@ public class Pbf implements Contragent {
         if (userUploadSession.getText() != null && !userUploadSession.getText().isEmpty() && !userUploadSession.getText().equals("null")) {
             addComment(reqNumber, userUploadSession.getText());
         }
-        Req reqFromDb = reqService.getReqByNumber(reqNumber);
-        if (reqFromDb != null) {
-            reqService.setReqStatus(reqNumber,ReqStatus.CLOSED);
-        }else if(notInDbReqs.containsKey(reqNumber)) {
-            notInDbReqs.get(reqNumber).setStatus(ReqStatus.CLOSED);
-        }else{
-            messageService.sendSimpleMessage(Const.ADMIN_CHAT_ID,"Закрыта заявка которой нет в БД и нет в кеше недобавленых заявок разберись! " + reqNumber, null);
-            return false;
+
+        try {
+            reqService.setReqStatus(reqNumber, ReqStatus.CLOSED_BY_ENGINEER);
+        } catch (Exception e) {
+            log.error("Ошибка установки статуса заявки {}", e.getMessage());
+            return false;   // или продолжить, но без обновления кэша
         }
+        Req cached = cashNewReq.get(reqNumber);
+        if (cached != null) {
+            cached.setStatus(ReqStatus.CLOSED_BY_ENGINEER);
+        }
+
         return true;
     }
 
@@ -115,22 +128,19 @@ public class Pbf implements Contragent {
     }
 
     @Override
-    public void processNewEmail(Message message) {
+    public void processNewEmail(Message message, Long uid) {
 
     }
 
     @Override
     public List<Req> getAllRequests() {
-        return reqService.getNewWithPending(name, notInDbReqs.values(),getSorter());
+        return cashNewReq.values().stream().sorted(getSorter()).toList();
     }
 
     @Override
     public Optional<Req> getRequestByNumber(String requestNumber) {
-        Optional<Req> reqByNumber = Optional.ofNullable(reqService.getReqByNumber(requestNumber));
-        if (reqByNumber.isEmpty() && notInDbReqs.containsKey(requestNumber)) {
-            reqByNumber = Optional.ofNullable(notInDbReqs.get(requestNumber));
-        }
-        return reqByNumber;
+
+        return Optional.ofNullable(cashNewReq.get(requestNumber));
     }
 
     @Override
@@ -176,10 +186,13 @@ public class Pbf implements Contragent {
 
 
         int total = root.path("total").asInt();
-            System.out.println("Всего задач: " + total);
+        if (total == 0) {
+            log.warn("[{}] Jira вернул 0 заявок — отмену пропускаем", name);
+            return;
+        }
 // Получаем массив issues
         JsonNode issues = root.path("issues");
-        Set<Req> allRequestsFromSyte = new HashSet<>();
+        Map<String, Req> allRequestsFromSyte = new LinkedHashMap<>();
         // Проходим по всем задачам (если есть)
         issues.forEach(issue -> {
             // Извлекаем нужные поля
@@ -221,17 +234,43 @@ public class Pbf implements Contragent {
             req.setCreationTime(ldt);
             // req.setActual(false);
             req.setContragent(this.name);
-            allRequestsFromSyte.add(req);
+            allRequestsFromSyte.put(req.getRequestNumber(), req);
         });
-//
-        for (Req req : allRequestsFromSyte) {
+
+        // сверяеем кеш и заявки с сайта, если в кеше есть а с сайта нет, помечаем в кеше и в базе как отменена
+        Iterator<Map.Entry<String, Req>> it = cashNewReq.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, Req> entry = it.next();
+            String number = entry.getKey();
+            Req cached = entry.getValue();
+
+            if (allRequestsFromSyte.containsKey(number)) continue;   // ещё на сайте
+
+            try {
+                if (cached.getStatus() == ReqStatus.NEW || reqService.getReqByNumber(number).getStatus() == ReqStatus.NEW ) {
+                    reqService.setReqStatus(number, ReqStatus.CANCELLED);
+                    log.info("[{}] {} → CANCELLED (пропала с сайта)", name, number);
+                } else {
+                    reqService.setReqStatus(number,ReqStatus.CLOSED);
+                    log.info("[{}] {} пропала с сайта, статус {} — убираем из кеша",
+                            name, number, cached.getStatus());
+                }
+            } catch (Exception e) {
+                log.error("[{}] не удалось обновить {}: {}", name, number, e.getMessage());
+            }
+            it.remove();   // ← удаляем ВСЕГДА, при любом статусе
+        }
+
+        for (Req req : allRequestsFromSyte.values()) {
             String number = req.getRequestNumber();
 
-            if (!cash.contains(number)) {
+            if (!cashNewReq.containsKey(number)) {
                 // Выполняем дополнительный код для НОВЫХ заявок
                 addNewReq(req, allUserIds);
             }
         }
+
+
     }
 
     @Override
@@ -242,12 +281,11 @@ public class Pbf implements Contragent {
 
     @Override
     public void addNewReq(Req req, List<Long> allUserIds) {
-
-        if(!reqService.addReq(req)){
-            String error = Const.REQ_ADD_ERROR_MESSAGE;
-            log.error("addNewReq: ошибка заявки {}", req.getRequestNumber() );
-            req.setRequestText(req.getRequestText() + error);
-            notInDbReqs.put(req.getRequestNumber(),req);
+        req.setStatus(ReqStatus.NEW);
+        cashNewReq.put(req.getRequestNumber(), req);
+        if (!reqService.addReq(req)) {
+            messageService.sendSimpleMessage(Const.ADMIN_CHAT_ID, req.toString() + Const.REQ_ADD_ERROR_MESSAGE, null);
+            log.error("addNewReq: ошибка заявки {}", req.getRequestNumber());
         }
 
         for (Long getUserChatId : allUserIds) {
@@ -313,25 +351,6 @@ public class Pbf implements Contragent {
         }
     }
 
-    @Scheduled(fixedDelayString = "${bot.merge-retry-ms:60000}")
-    public void mergeReqWithDb() {
-        if (notInDbReqs.isEmpty()) return;
 
-        Iterator<Map.Entry<String, Req>> it = notInDbReqs.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry<String, Req> entry = it.next();
-            String number = entry.getKey();
-            Req req = entry.getValue();
-
-            try {
-                if (reqService.addReq(req)) {
-                    it.remove();   // ← успех — убрать из Map
-                    log.info("Досохранена {}", number);
-                }
-            } catch (Exception e) {
-                log.error("Retry {}: {}", number, e.getMessage());
-            }
-        }
-    }
 }
 

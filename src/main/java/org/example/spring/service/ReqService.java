@@ -26,14 +26,15 @@ public class ReqService {
     public List<Req> getAllReqs() {
         return requestRepo.findAll();
     }
+    public Req findReqByReqNumber(String reqNumber) {
+        return requestRepo.findByRequestNumber(reqNumber).orElse(null);
+    }
 
     public List<Req> getNewWithPending(String contragent,
-                                       Collection<Req> pending,
                                        Comparator<Req> sorter) {
         List<Req> fromDb = requestRepo.findByContragentAndStatuses(contragent,List.of(ReqStatus.NEW,ReqStatus.CLOSED_BY_ENGINEER));
-        List<Req> merged = mergeWithPending(fromDb, pending);
-        merged.sort(sorter);
-        return merged;
+        fromDb.sort(sorter);
+        return fromDb;
     }
 
 
@@ -68,13 +69,18 @@ public class ReqService {
 
     }
 
-    public Set<String> findAllRequestNumbers() {
-        return requestRepo.findAllRequestNumbers();
+    public Set<String> findAllRequestNumbers(ReqStatus reqStatus) {
+        return requestRepo.findAllRequestNumbers(reqStatus);
     }
 
-    public Set<String> findAllNewRequestNumbers(){
-        return requestRepo.findAllRequestNumbersByStatuses(List.of(ReqStatus.NEW, ReqStatus.CLOSED_BY_ENGINEER));
+    public Map<String, Req> findByStatusesAndContragent(List<ReqStatus> statuses, String contragent) {
+        Map<String, Req> reqMap = new HashMap<>();
+        for (Req req : requestRepo.findByStatusesAndContragent(statuses, contragent)) {
+            reqMap.put(req.getRequestNumber(), req);
+        }
+        return reqMap;
     }
+
 
     private List<Req> mergeWithPending(List<Req> fromDb, Collection<Req> pending) {
         if (pending == null || pending.isEmpty()) {

@@ -1,8 +1,6 @@
 package org.example.processors;
 
-import jakarta.mail.Address;
-import jakarta.mail.Flags;
-import jakarta.mail.Message;
+import jakarta.mail.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.entity.Contragents.Contragent;
@@ -41,19 +39,23 @@ public class EmailMonitoringProcessor {
 
             for (Message message : newMessages) {
                 try {
+                    Folder folder = monitor.getInbox();
                     Address[] from = message.getFrom();
+                    UIDFolder uidFolder = (UIDFolder) folder;
+                    long uid = uidFolder.getUID(message);
+
                     if (from == null || from.length == 0) {
                         log.warn("Письмо без отправителя — пропускаем");
                         continue;
                     }
                     String address = from[0].toString();
-
+                    log.debug("получено письмо от: {}", address);
                     Contragent target = resolveContragent(address);
                     if (target == null) {
                         log.debug("Нет контрагента для отправителя: {}", address);
                         // всё равно помечаем прочитанным, чтобы не зацикливаться
                     } else {
-                        target.processNewEmail(message);
+                        target.processNewEmail(message, uid);
                     }
 
                     message.setFlag(Flags.Flag.SEEN, true);

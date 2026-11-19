@@ -17,7 +17,7 @@
 
     <groupId>org.example</groupId>
     <artifactId>MyMaxBot</artifactId>
-    <version>3.00</version>
+    <version>3.01</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -70,6 +70,7 @@
                     <winConsole>true</winConsole>
                     <!-- Тип: app-image = папка с exe (portable), exe = установщик, msi = MSI -->
                     <type>app-image</type>
+                    <javaOptions>-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -DCONSOLE_LOG_CHARSET=UTF-8</javaOptions>
                     <appVersion>${project.version}</appVersion>
                     <copyright>UnionService</copyright>
                     <vendor>UnionService</vendor>
